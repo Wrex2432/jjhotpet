@@ -7,58 +7,46 @@
   <link rel="stylesheet" href="../assets/style.css" />
   <style>
     .pad { min-height: calc(100dvh - 140px); position: relative; }
+    .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+    .grow { flex:1 1 auto; }
+    .muted { color: var(--muted); }
 
-    /* SCANNING (default) */
-    .scan-card { display: grid; gap: 14px; }
+    /* SCANNING CARD */
+    .scan-card { display:grid; gap:14px; }
     .preview {
-      position: relative;
-      width: 100%;
-      aspect-ratio: 3/4;
-      border-radius: 16px;
-      overflow: hidden;
-      background: #000;
-      box-shadow: var(--shadow);
+      position: relative; width:100%; aspect-ratio:3/4;
+      border-radius:16px; overflow:hidden; background:#000; box-shadow: var(--shadow);
     }
-    .preview video {
-      width: 100%; height: 100%; object-fit: cover; display: block;
-      filter: saturate(1.1) contrast(1.05) brightness(1.02);
-    }
+    .preview video { width:100%; height:100%; object-fit:cover; display:block; }
     .reticle {
-      position: absolute; inset: 0;
-      outline: 2px dashed #3a8fff88; outline-offset: -12px;
-      border-radius: 12px; pointer-events: none;
+      position:absolute; inset:0; pointer-events:none; border-radius:12px;
+      outline:2px dashed #3a8fff88; outline-offset:-12px;
       animation: breathe 1.6s ease-in-out infinite;
     }
     @keyframes breathe { 0%,100%{opacity:.65} 50%{opacity:1} }
 
     .hud {
-      position: absolute; bottom: 10px; left: 10px; right: 10px;
-      display: flex; justify-content: space-between; align-items: center;
-      gap: 10px; padding: 8px 10px; border-radius: 10px;
-      background: rgba(10,12,16,.55); color: var(--text);
-      font-size: 14px; backdrop-filter: blur(6px);
+      position:absolute; left:10px; right:10px; bottom:10px;
+      display:flex; justify-content:space-between; align-items:center; gap:10px;
+      background:rgba(10,12,16,.55); backdrop-filter: blur(6px);
+      color:var(--text); font-size:14px; padding:8px 10px; border-radius:10px;
     }
+    .hud .group { display:flex; gap:8px; }
 
-    /* ACTIVE (after valid scan) */
-    .active-box { display: grid; gap: 16px; }
-    .stats {
-      display: grid; gap: 8px; color: var(--muted);
-      border-bottom: 1px dashed #2d3340; padding-bottom: 8px; margin-bottom: 8px;
-    }
-    .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-    .grow { flex: 1 1 auto; }
-    .count { font-weight: 800; }
+    /* ACTIVE CARD */
+    .active-box { display:grid; gap:16px; }
+    .stats { display:grid; gap:8px; color:var(--muted); border-bottom:1px dashed #2d3340; padding-bottom:8px; margin-bottom:8px; }
+    .count { font-weight:800; }
     .big-char {
-      width: min(46vw, 520px); aspect-ratio: 1/1; border-radius: 50%;
+      width:min(46vw, 520px); aspect-ratio:1/1; border-radius:50%;
       background: radial-gradient(circle at 35% 30%, #fff7 0 20%, #0000 21%),
                   linear-gradient(180deg, #60a5fa 0%, #3b82f6 100%);
       box-shadow: 0 16px 40px rgba(0,0,0,.35), inset 0 10px 28px rgba(255,255,255,.22);
     }
-    .muted { color: var(--muted); }
 
     /* tiny helper list */
-    .demo-links { display: flex; flex-wrap: wrap; gap: 8px; }
-    .demo-links a { font-size: 12px; }
+    .demo-links { display:flex; flex-wrap:wrap; gap:8px; }
+    .demo-links a { font-size:12px; }
   </style>
 </head>
 <body class="kiosk">
@@ -68,26 +56,29 @@
   </header>
 
   <main class="container pad">
-    <!-- SCANNING (default) -->
-    <section id="scan" class="card scan-card">
-      <h2>Scanning for QR…</h2>
+    <!-- SCANNING (default visible) -->
+    <section id="scan" class="card scan-card" aria-live="polite">
+      <div class="row" style="justify-content:space-between;">
+        <h2 class="grow">Camera</h2>
+        <div class="row">
+          <button class="btn" id="btnStart">Start Scan</button>
+          <button class="btn ghost" id="btnFlip" title="Switch camera">Flip</button>
+          <button class="btn ghost" id="btnSim" title="Dev: simulate scan">Simulate Scan</button>
+        </div>
+      </div>
 
-      <div class="preview">
+      <div class="preview" id="previewBox">
         <video id="cam" autoplay playsinline muted></video>
         <div class="reticle" aria-hidden="true"></div>
         <div class="hud">
-          <span id="scanStatus">Initializing camera…</span>
-          <div>
-            <button class="btn ghost" id="btnFlip">Flip</button>
-            <button class="btn" id="btnSim">Simulate Scan</button>
+          <span id="scanStatus">Camera ready. Press “Start Scan”.</span>
+          <div class="group">
+            <span id="scanBadge" class="muted">Idle</span>
           </div>
         </div>
       </div>
 
-      <p class="muted">
-        Hold a phone QR steady inside the frame. We’ll auto-detect and continue.
-        If your browser doesn’t support QR detection, use <em>Simulate Scan</em>.
-      </p>
+      <p class="muted">On success, we’ll hide the camera and show the character. After the timer ends, we’ll reset back here.</p>
 
       <div class="muted" style="font-size:13px">
         Quick mobile demo links (open on phone):
@@ -105,12 +96,12 @@
         <div>Session time left: <span class="count" id="countdown">—</span>s</div>
       </div>
 
-      <!-- Character view (hidden during scanning, visible now) -->
+      <!-- Character view (hidden while scanning) -->
       <div class="big-char" id="bigChar" aria-label="Paired character"></div>
 
       <div class="row">
         <button class="btn" id="btnReset">Reset</button>
-        <span class="muted">Returns to scanner and hides the character.</span>
+        <span class="muted">Returns to camera and hides the character.</span>
       </div>
     </section>
   </main>
@@ -119,9 +110,7 @@
 
   <script src="../assets/main.js"></script>
   <script>
-    // ===== KIOSK SCRIPT (Scanning -> Active) =====
-
-    // ENV & deep link builder (to help users open mobile demo quickly)
+    // ===== ENV & deep link helper (for demo links) =====
     const HOST_IS_DEV = ['127.0.0.1', 'localhost'].includes(location.hostname);
     const HOST_IS_LIVE_SERVER = HOST_IS_DEV && location.port === '5500';
     const SUPPORTS_PATH_ROUTING = !HOST_IS_LIVE_SERVER;
@@ -133,9 +122,7 @@
     }
     function buildMobileDeepLink(n) {
       const base = getBasePath();
-      if (SUPPORTS_PATH_ROUTING) {
-        return `${location.origin}${base}/mobile/demopet${n}`;
-      }
+      if (SUPPORTS_PATH_ROUTING) return `${location.origin}${base}/mobile/demopet${n}`;
       return `${location.origin}${base}/mobile/index.html#demopet${n}`;
     }
     (function renderDemoLinks(){
@@ -152,47 +139,56 @@
       wrap.appendChild(frag);
     })();
 
-    // DOM refs
+    // ===== DOM refs =====
     const elScan = document.getElementById('scan');
     const elActive = document.getElementById('active');
     const elCam = document.getElementById('cam');
     const elStatus = document.getElementById('scanStatus');
+    const elScanBadge = document.getElementById('scanBadge');
     const elPairLabel = document.getElementById('pairLabel');
     const elCountdown = document.getElementById('countdown');
     const elBigChar = document.getElementById('bigChar');
+    const btnStart = document.getElementById('btnStart');
     const btnReset = document.getElementById('btnReset');
     const btnSim = document.getElementById('btnSim');
     const btnFlip = document.getElementById('btnFlip');
     const statsBox = document.querySelector('.stats');
 
-    // Runtime
-    const SESSION_SECONDS = 20;
+    // ===== Runtime =====
+    const SESSION_SECONDS = 20;              // seconds to show character before auto-reset
     let stream = null, detector = null, rafId = null, countdownId = null;
-    let usingUserCam = false; // false = rear/environment, true = front/user
+    let usingUserCam = false;                // false = environment (rear), true = user (front)
+    let scanning = false;
 
-    // ---------- State handling ----------
-    function setStateScanning () {
-      elScan.hidden = false;
-      elActive.hidden = true;
+    // ===== State handling =====
+    function goDefault() {
+      // default = camera visible, character hidden, scanning OFF
+      setStateScanningCard(true);
+      setStateActiveCard(false);
+      stopDetector(); // ensure detector off
       stopCountdown();
-      startCamera()
-        .then(startDetector)
-        .catch(err => {
-          console.error(err);
-          elStatus.textContent = 'Camera/QR unavailable. You can still use Simulate Scan.';
-        });
+      elScanBadge.textContent = 'Idle';
+      elStatus.textContent = 'Camera ready. Press “Start Scan”.';
     }
 
-    function setStateActive (data) {
-      elScan.hidden = true;
-      elActive.hidden = false;
+    function setStateScanningCard(visible) {
+      elScan.hidden = !visible;
+    }
+    function setStateActiveCard(visible) {
+      elActive.hidden = !visible;
+    }
+
+    function onValidScan(data) {
+      // hide camera, show character
+      setStateScanningCard(false);
+      setStateActiveCard(true);
       stopDetector();
       bindActiveView(data);
       startCountdown();
       HOTPET.send('kiosk:paired', { code: data.code || data.petName || '' });
     }
 
-    // ---------- Camera ----------
+    // ===== Camera =====
     async function startCamera () {
       stopCamera();
       const constraints = {
@@ -201,7 +197,6 @@
       };
       stream = await navigator.mediaDevices.getUserMedia(constraints);
       elCam.srcObject = stream;
-      elStatus.textContent = 'Looking for QR…';
     }
 
     function stopCamera () {
@@ -212,27 +207,32 @@
       }
     }
 
-    // ---------- QR detection ----------
-    async function startDetector () {
+    // ===== QR detection =====
+    function startScanLoop() {
       if (!('BarcodeDetector' in window)) {
-        elStatus.textContent = 'QR detection not supported, use Simulate Scan.';
+        elStatus.textContent = 'QR detection not supported in this browser.';
+        elScanBadge.textContent = 'Unsupported';
         return;
       }
       detector = new BarcodeDetector({ formats: ['qr_code'] });
+      elScanBadge.textContent = 'Scanning…';
+      elStatus.textContent = 'Looking for QR…';
+      scanning = true;
 
       const loop = async () => {
         try {
+          if (!scanning) return; // stop requested
           if (!elCam.videoWidth) { rafId = requestAnimationFrame(loop); return; }
           const codes = await detector.detect(elCam);
           if (codes && codes.length) {
             const raw = (codes[0].rawValue || '').trim();
             const data = parsePayload(raw);
-            if (data) { setStateActive(data); return; }
+            if (data) { scanning = false; onValidScan(data); return; }
           }
           rafId = requestAnimationFrame(loop);
         } catch (e) {
           console.warn('Detector error:', e);
-          elStatus.textContent = 'Detector error. You can use Simulate Scan.';
+          elStatus.textContent = 'Detector error. Try again or Simulate Scan.';
           rafId = requestAnimationFrame(loop);
         }
       };
@@ -240,13 +240,15 @@
     }
 
     function stopDetector () {
+      scanning = false;
       if (rafId) cancelAnimationFrame(rafId);
       rafId = null;
       detector = null;
+      elScanBadge.textContent = 'Idle';
     }
 
-    // ---------- Payload parsing & view binding ----------
-    // Accepts HOTPETV1:<base64json> or legacy simple alphanumeric codes
+    // ===== Payload parsing & view binding =====
+    // Accept HOTPETV1:<base64json> (preferred), fallback: A–Z0–9 (4–8)
     function parsePayload (raw) {
       const m = raw.match(/^HOTPETV1[:\- ]?([A-Za-z0-9+/=]+)$/);
       if (m) {
@@ -262,18 +264,18 @@
     }
 
     function bindActiveView (data) {
-      // Title / pairing line
+      // pairing label
       const title = data.code ? data.code : `${data.userName || 'Guest'} — ${data.petName || 'Pet'}`;
       elPairLabel.textContent = title;
 
-      // Big character art
+      // character art
       if (data.petSprite) {
         elBigChar.style.background = `#0f1218 center/cover no-repeat url('${data.petSprite}')`;
       } else {
         elBigChar.style.background = 'radial-gradient(circle at 35% 30%, #fff7 0 20%, #0000 21%), linear-gradient(180deg, #60a5fa 0%, #3b82f6 100%)';
       }
 
-      // Remove old extra line, add current meta
+      // extra line (discount / points)
       const oldExtra = statsBox.querySelector('.extra-line');
       if (oldExtra) oldExtra.remove();
       const extra = document.createElement('div');
@@ -284,7 +286,7 @@
       statsBox.appendChild(extra);
     }
 
-    // ---------- Countdown & reset ----------
+    // ===== Countdown & reset =====
     function startCountdown () {
       let left = SESSION_SECONDS;
       elCountdown.textContent = left;
@@ -295,24 +297,27 @@
         if (left <= 0) doReset();
       }, 1000);
     }
-
     function stopCountdown () {
       if (countdownId) clearInterval(countdownId);
       countdownId = null;
     }
-
     function doReset () {
       stopCountdown();
-      setStateScanning();
+      goDefault(); // back to camera visible, character hidden
       HOTPET.send('kiosk:reset', { code: HOTPET.getSession() });
     }
 
-    // ---------- Controls ----------
+    // ===== Controls =====
+    btnStart.addEventListener('click', () => {
+      // ensure camera is running; then begin detection
+      startCamera().then(startScanLoop).catch(err => {
+        console.error(err);
+        elStatus.textContent = 'Camera permission denied or unavailable.';
+      });
+    });
     btnReset.addEventListener('click', doReset);
-
     btnSim.addEventListener('click', () => {
-      // Demo payload (matches your pets.json format)
-      setStateActive({
+      onValidScan({
         v: 1,
         userName: 'Demo User',
         petName: 'Mochi',
@@ -321,23 +326,30 @@
         currentPoints: 777
       });
     });
-
     btnFlip.addEventListener('click', async () => {
       usingUserCam = !usingUserCam;
-      await startCamera().then(() => { if (detector) startDetector(); });
+      // If scanning, restart camera + detector; if idle, just switch camera
+      await startCamera().then(() => { if (scanning) startScanLoop(); });
     });
 
     // Optional: accept broadcast payloads for testing without camera
     HOTPET.on((msg) => {
       if (msg.type === 'mobile:show_qr' && msg.payload?.code) {
         const data = parsePayload(msg.payload.code);
-        // Uncomment to auto-advance even without scanning:
-        // if (data) setStateActive(data);
+        // Uncomment to allow pairing without camera during dev:
+        // if (data) onValidScan(data);
       }
     });
 
-    // ---------- Boot & cleanup ----------
-    setStateScanning();
+    // ===== Boot & cleanup =====
+    // Start camera preview immediately (no scan yet); character hidden
+    startCamera().then(() => {
+      elStatus.textContent = 'Camera ready. Press “Start Scan”.';
+      goDefault();
+    }).catch(() => {
+      elStatus.textContent = 'Camera unavailable. You can Simulate Scan.';
+      goDefault();
+    });
 
     addEventListener('beforeunload', () => {
       stopDetector();
