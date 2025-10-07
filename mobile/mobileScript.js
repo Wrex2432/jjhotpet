@@ -4,7 +4,6 @@
    - "Show QR" hides pet card and shows only the QR view
    - Deep links: /mobile/demopet1..6 set current pet
 */
-
 (function(){
   const {
     $, $$, show, hide, swap, fetchJSON
@@ -34,14 +33,16 @@
   $('#btnBackHome2').addEventListener('click', () => routeTo('home'));
   $('#btnBackHome3').addEventListener('click', () => routeTo('home'));
 
+  // FIXED: toggle the 'hidden' class so it actually shows/hides
   $('#btnToggleQR').addEventListener('click', () => {
     buildQR();
-    hide(petCard);
-    show(qrOnly);
+    petCard.classList.add('hidden');     // hide pet card
+    qrOnly.classList.remove('hidden');   // show QR-only view
   });
+
   $('#btnHideQR').addEventListener('click', () => {
-    hide(qrOnly);
-    show(petCard);
+    qrOnly.classList.add('hidden');      // hide QR-only view
+    petCard.classList.remove('hidden');  // show pet card
   });
 
   // State
@@ -73,9 +74,9 @@
 
   function onShowCurrent(){
     setCurrentPet(currentPet);
-    // Ensure QR is hidden by default
-    hide(qrOnly);
-    show(petCard);
+    // Ensure QR is hidden by default (FIXED default state)
+    qrOnly.classList.add('hidden');
+    petCard.classList.remove('hidden');
     routeTo('current');
   }
 
