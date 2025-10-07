@@ -1,0 +1,113 @@
+/* --- Tiny reset --- */
+*,
+*::before,
+*::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; }
+img { max-width: 100%; display: block; }
+button, input, select, textarea { font: inherit; }
+
+/* --- Theme vars --- */
+:root {
+  --bg: #0b0c10;
+  --panel: #15171c;
+  --text: #eef1f6;
+  --muted: #99a2b2;
+  --brand: #6ee7b7;   /* mint */
+  --brand-ghost: #2a2f38;
+  --radius: 18px;
+  --pad: 18px;
+  --maxw: 960px;
+  --shadow: 0 8px 24px rgba(0,0,0,.34);
+}
+
+/* --- Layout --- */
+body {
+  background: radial-gradient(1200px 800px at 50% -10%, #1b1f27 0%, var(--bg) 60%);
+  color: var(--text);
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue",
+               Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  line-height: 1.45;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: 100dvh;
+}
+
+.site-header, .site-footer {
+  padding: calc(var(--pad) * 1.2) var(--pad);
+  max-width: var(--maxw);
+  width: 100%;
+  margin-inline: auto;
+}
+
+.site-header h1 {
+  margin: 0 0 4px 0;
+  letter-spacing: .5px;
+}
+.tag { color: var(--muted); margin: 0; }
+
+.container {
+  max-width: var(--maxw);
+  width: 100%;
+  margin: 24px auto;
+  padding: 0 var(--pad);
+}
+
+.card {
+  background: var(--panel);
+  border-radius: var(--radius);
+  padding: calc(var(--pad) * 1.5);
+  box-shadow: var(--shadow);
+}
+
+/* --- Menu --- */
+.menu {
+  display: grid;
+  gap: 14px;
+  justify-items: start;
+  align-items: center;
+  padding-block: 28px;
+}
+
+.btn {
+  appearance: none;
+  border: none;
+  background: var(--brand);
+  color: #0a0b0e;
+  font-weight: 700;
+  padding: 14px 18px;
+  border-radius: 12px;
+  text-decoration: none;
+  box-shadow: 0 6px 14px rgba(110,231,183,.25);
+  transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease;
+}
+.btn:hover { transform: translateY(-1px); }
+.btn:active { transform: translateY(0); opacity: .9; }
+
+.btn.ghost {
+  background: var(--brand-ghost);
+  color: var(--text);
+  box-shadow: none;
+  border: 1px solid #2f3540;
+}
+
+/* --- Links --- */
+.link {
+  color: var(--brand);
+  text-decoration: none;
+}
+.link:hover { text-decoration: underline; }
+
+/* --- Page-specific hooks (optional) --- */
+body.kiosk .card { border: 1px dashed #2c3442; }
+body.mobile .card { border: 1px dashed #2c4234; }
+
+/* --- Footer --- */
+.site-footer {
+  color: var(--muted);
+  font-size: 14px;
+  text-align: center;
+  opacity: .9;
+}
+
+/* add somewhere near other utilities */
+.muted { color: var(--muted); }

@@ -1,0 +1,8 @@
+[
+  ["Iza",   "Mochi", "https://api.dicebear.com/9.x/pixel-art/png?seed=Mochi&size=512", 3, 1200],
+  ["Liter", "Bolt",  "https://api.dicebear.com/9.x/pixel-art/png?seed=Bolt&size=512", 1, 340],
+  ["Mik","Nori",  "https://api.dicebear.com/9.x/pixel-art/png?seed=Nori&size=512", 5, 5020],
+  ["Jay", "Pip",   "https://api.dicebear.com/9.x/pixel-art/png?seed=Pip&size=512", 0, 75],
+  ["Neja",   "Kumo",  "https://api.dicebear.com/9.x/pixel-art/png?seed=Kumo&size=512", 2, 890],
+  ["Sai", "Zest",  "https://api.dicebear.com/9.x/pixel-art/png?seed=Zest&size=512", 4, 2715]
+]

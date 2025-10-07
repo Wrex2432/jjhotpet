@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>hotpet — Kiosk</title>
+  <link rel="stylesheet" href="../assets/style.css" />
+  <style>
+    .pad { min-height: calc(100dvh - 140px); position: relative; }
+
+    /* SCANNING (default) */
+    .scan-card { display: grid; gap: 14px; }
+    .preview {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 3/4;
+      border-radius: 16px;
+      overflow: hidden;
+      background: #000;
+      box-shadow: var(--shadow);
+    }
+    .preview video {
+      width: 100%; height: 100%; object-fit: cover; display: block;
+      filter: saturate(1.1) contrast(1.05) brightness(1.02);
+    }
+    .reticle {
+      position: absolute; inset: 0;
+      outline: 2px dashed #3a8fff88; outline-offset: -12px;
+      border-radius: 12px;
+      pointer-events: none;
+      animation: breathe 1.6s ease-in-out infinite;
+    }
+    @keyframes breathe { 0%,100%{opacity:.65} 50%{opacity:1} }
+
+    .hud {
+      position: absolute; bottom: 10px; left: 10px; right: 10px;
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 10px; padding: 8px 10px; border-radius: 10px;
+      background: rgba(10,12,16,.55); color: var(--text);
+      font-size: 14px;
+      backdrop-filter: blur(6px);
+    }
+
+    /* ACTIVE (after valid scan) */
+    .active-box { display: grid; gap: 16px; }
+    .stats {
+      display: grid; gap: 8px; color: var(--muted);
+      border-bottom: 1px dashed #2d3340; padding-bottom: 8px; margin-bottom: 8px;
+    }
+    .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .grow { flex: 1 1 auto; }
+    .count { font-weight: 800; }
+    .big-char {
+      width: min(46vw, 520px); aspect-ratio: 1/1; border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #fff7 0 20%, #0000 21%),
+                  linear-gradient(180deg, #60a5fa 0%, #3b82f6 100%);
+      box-shadow: 0 16px 40px rgba(0,0,0,.35), inset 0 10px 28px rgba(255,255,255,.22);
+    }
+
+    .muted { color: var(--muted); }
+  </style>
+</head>
+<body class="kiosk">
+  <header class="site-header">
+    <h1>Kiosk (Bipad)</h1>
+    <nav><a class="link" href="../">← Back to Menu</a></nav>
+  </header>
+
+  <main class="container pad">
+    <!-- SCANNING (default) -->
+    <section id="scan" class="card scan-card">
+      <h2>Scanning for QR…</h2>
+
+      <div class="preview">
+        <video id="cam" autoplay playsinline muted></video>
+        <div class="reticle" aria-hidden="true"></div>
+        <div class="hud">
+          <span id="scanStatus">Initializing camera…</span>
+          <div>
+            <button class="btn ghost" id="btnFlip">Flip</button>
+            <button class="btn" id="btnSim">Simulate Scan</button>
+          </div>
+        </div>
+      </div>
+
+      <p class="muted">
+        Tip: hold a phone QR steady inside the frame. We’ll auto-detect and continue.
+        If your browser doesn’t support QR detection, use <em>Simulate Scan</em>.
+      </p>
+    </section>
+
+    <!-- ACTIVE (hidden until valid scan) -->
+    <section id="active" class="card active-box" hidden>
+      <div class="stats">
+        <div class="row">
+          <div class="grow">Paired with code: <strong id="pairCode">— — — —</strong></div>
+          <div class="muted">Status: <span id="status">Active</span></div>
+        </div>
+        <div>Session time left: <span class="count" id="countdown">—</span>s</div>
+      </div>
+
+      <!-- Character view (hidden during scanning, visible now) -->
+      <div class="big-char" aria-label="Paired character"></div>
+
+      <div class="row">
+        <button class="btn" id="btnReset">Reset</button>
+        <span class="muted">Returns to scanner and hides the character.</span>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">© <span id="year"></span> hotpet</footer>
+
+  <script src="../assets/main.js"></script>
+  <script>
+  // ===== KIOSK SCRIPT (Scanning -> Active) =====
+
+  // DOM refs
+  const elScan = document.getElementById('scan');
+  const elActive = document.getElementById('active');
+  const elCam = document.getElementById('cam');
+  const elStatus = document.getElementById('scanStatus');
+  const elPair = document.getElementById('pairCode');
+  const elCountdown = document.getElementById('countdown');
+  const btnReset = document.getElementById('btnReset');
+  const btnSim = document.getElementById('btnSim');
+  const btnFlip = document.getElementById('btnFlip');
+  const statsBox = document.querySelector('.stats');
+  const bigChar = document.querySelector('.big-char');
+
+  // Runtime
+  const SESSION_SECONDS = 20;
+  let stream = null, detector = null, rafId = null, countdownId = null;
+  let usingUserCam = false; // false = rear/environment, true = front/user
+
+  // ---------- State handling ----------
+  function setStateScanning () {
+    elScan.hidden = false;
+    elActive.hidden = true;
+    stopCountdown();
+    startCamera()
+      .then(startDetector)
+      .catch(err => {
+        console.error(err);
+        elStatus.textContent = 'Camera/QR unavailable. You can still use Simulate Scan.';
+      });
+  }
+
+  function setStateActive (data) {
+    elScan.hidden = true;
+    elActive.hidden = false;
+    stopDetector();
+    bindActiveView(data);
+    startCountdown();
+    HOTPET.send('kiosk:paired', { code: data.code || data.petName || '' });
+  }
+
+  // ---------- Camera ----------
+  async function startCamera () {
+    stopCamera();
+    const constraints = {
+      video: { facingMode: usingUserCam ? 'user' : 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: false
+    };
+    stream = await navigator.mediaDevices.getUserMedia(constraints);
+    elCam.srcObject = stream;
+    elStatus.textContent = 'Looking for QR…';
+  }
+
+  function stopCamera () {
+    if (rafId) cancelAnimationFrame(rafId);
+    if (stream) {
+      stream.getTracks().forEach(t => t.stop());
+      stream = null;
+    }
+  }
+
+  // ---------- QR detection ----------
+  async function startDetector () {
+    if (!('BarcodeDetector' in window)) {
+      elStatus.textContent = 'QR detection not supported, use Simulate Scan.';
+      return;
+    }
+    detector = new BarcodeDetector({ formats: ['qr_code'] });
+
+    const loop = async () => {
+      try {
+        if (!elCam.videoWidth) { rafId = requestAnimationFrame(loop); return; }
+        const codes = await detector.detect(elCam);
+        if (codes && codes.length) {
+          const raw = (codes[0].rawValue || '').trim();
+          const data = parsePayload(raw);
+          if (data) { setStateActive(data); return; }
+        }
+        rafId = requestAnimationFrame(loop);
+      } catch (e) {
+        console.warn('Detector error:', e);
+        elStatus.textContent = 'Detector error. You can use Simulate Scan.';
+        rafId = requestAnimationFrame(loop);
+      }
+    };
+    rafId = requestAnimationFrame(loop);
+  }
+
+  function stopDetector () {
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = null;
+    detector = null;
+  }
+
+  // ---------- Payload parsing & view binding ----------
+  // Accepts HOTPETV1:<base64json> or legacy simple alphanumeric codes
+  function parsePayload (raw) {
+    const m = raw.match(/^HOTPETV1[:\- ]?([A-Za-z0-9+/=]+)$/);
+    if (m) {
+      try {
+        const json = decodeURIComponent(escape(atob(m[1])));
+        const obj = JSON.parse(json);
+        if (obj && obj.v === 1) return obj; // {userName, petName, petSprite, discountLevel, currentPoints}
+      } catch {}
+    }
+    const m2 = raw.match(/^[A-Z0-9]{4,8}$/i);
+    if (m2) return { v: 0, code: m2[0].toUpperCase() };
+    return null;
+  }
+
+  function bindActiveView (data) {
+    // Title / pairing line
+    const title = data.code ? data.code : `${data.userName || 'Guest'} — ${data.petName || 'Pet'}`;
+    elPair.textContent = title;
+
+    // Big character art
+    if (data.petSprite) {
+      bigChar.style.background = `#0f1218 center/cover no-repeat url('${data.petSprite}')`;
+    } else {
+      // Fallback gradient
+      bigChar.style.background = 'radial-gradient(circle at 35% 30%, #fff7 0 20%, #0000 21%), linear-gradient(180deg, #60a5fa 0%, #3b82f6 100%)';
+    }
+
+    // Clean previous extra stat (if any) and add current info
+    const oldExtra = statsBox.querySelector('.extra-line');
+    if (oldExtra) oldExtra.remove();
+    const extra = document.createElement('div');
+    extra.className = 'muted extra-line';
+    extra.textContent = (data.v === 1)
+      ? `Discount ${data.discountLevel}/5 • ${data.currentPoints} pts`
+      : 'Legacy code payload';
+    statsBox.appendChild(extra);
+  }
+
+  // ---------- Countdown & reset ----------
+  function startCountdown () {
+    let left = SESSION_SECONDS;
+    elCountdown.textContent = left;
+    stopCountdown();
+    countdownId = setInterval(() => {
+      left -= 1;
+      elCountdown.textContent = left;
+      if (left <= 0) doReset();
+    }, 1000);
+  }
+
+  function stopCountdown () {
+    if (countdownId) clearInterval(countdownId);
+    countdownId = null;
+  }
+
+  function doReset () {
+    stopCountdown();
+    setStateScanning();
+    HOTPET.send('kiosk:reset', { code: HOTPET.getSession() });
+  }
+
+  // ---------- Controls ----------
+  btnReset.addEventListener('click', doReset);
+
+  btnSim.addEventListener('click', () => {
+    // Demo payload
+    setStateActive({
+      v: 1,
+      userName: 'Demo User',
+      petName: 'Mochi',
+      petSprite: '../assets/sprites/pet1.png',
+      discountLevel: 2,
+      currentPoints: 777
+    });
+  });
+
+  btnFlip.addEventListener('click', async () => {
+    usingUserCam = !usingUserCam;
+    await startCamera().then(() => { if (detector) startDetector(); });
+  });
+
+  // Optional: accept broadcast payloads for testing without camera
+  HOTPET.on((msg) => {
+    if (msg.type === 'mobile:show_qr' && msg.payload?.code) {
+      const data = parsePayload(msg.payload.code);
+      // Uncomment to auto-advance even without scanning:
+      // if (data) setStateActive(data);
+    }
+  });
+
+  // ---------- Boot & cleanup ----------
+  setStateScanning();
+
+  addEventListener('beforeunload', () => {
+    stopDetector();
+    stopCamera();
+    stopCountdown();
+  });
+</script>
+
+</body>
+</html>

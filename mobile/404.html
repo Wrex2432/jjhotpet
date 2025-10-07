@@ -1,0 +1,27 @@
+<!doctype html>
+<html>
+  <head><meta charset="utf-8"><title>Redirecting…</title></head>
+  <body>
+    <script>
+      (function () {
+        var p = location.pathname;
+        // If this looks like /mobile/demopetN, rewrite to /mobile/index.html#demopetN
+        var m = p.toLowerCase().match(/(.*)\/mobile\/demopet(\d+)\b/);
+        if (m) {
+          var base = m[1] || '';
+          location.replace(base + '/mobile/index.html#demopet' + m[2] + location.search);
+          return;
+        }
+        // If this looks like /kiosk/*, send to /kiosk/index.html
+        m = p.toLowerCase().match(/(.*)\/kiosk\/.*/);
+        if (m) {
+          var base2 = m[1] || '';
+          location.replace(base2 + '/kiosk/index.html' + location.search + location.hash);
+          return;
+        }
+        // Otherwise back to /
+        location.replace('/');
+      })();
+    </script>
+  </body>
+</html>
