@@ -26,8 +26,7 @@
     .reticle {
       position: absolute; inset: 0;
       outline: 2px dashed #3a8fff88; outline-offset: -12px;
-      border-radius: 12px;
-      pointer-events: none;
+      border-radius: 12px; pointer-events: none;
       animation: breathe 1.6s ease-in-out infinite;
     }
     @keyframes breathe { 0%,100%{opacity:.65} 50%{opacity:1} }
@@ -37,8 +36,7 @@
       display: flex; justify-content: space-between; align-items: center;
       gap: 10px; padding: 8px 10px; border-radius: 10px;
       background: rgba(10,12,16,.55); color: var(--text);
-      font-size: 14px;
-      backdrop-filter: blur(6px);
+      font-size: 14px; backdrop-filter: blur(6px);
     }
 
     /* ACTIVE (after valid scan) */
@@ -56,8 +54,11 @@
                   linear-gradient(180deg, #60a5fa 0%, #3b82f6 100%);
       box-shadow: 0 16px 40px rgba(0,0,0,.35), inset 0 10px 28px rgba(255,255,255,.22);
     }
-
     .muted { color: var(--muted); }
+
+    /* tiny helper list */
+    .demo-links { display: flex; flex-wrap: wrap; gap: 8px; }
+    .demo-links a { font-size: 12px; }
   </style>
 </head>
 <body class="kiosk">
@@ -84,23 +85,28 @@
       </div>
 
       <p class="muted">
-        Tip: hold a phone QR steady inside the frame. We’ll auto-detect and continue.
+        Hold a phone QR steady inside the frame. We’ll auto-detect and continue.
         If your browser doesn’t support QR detection, use <em>Simulate Scan</em>.
       </p>
+
+      <div class="muted" style="font-size:13px">
+        Quick mobile demo links (open on phone):
+        <span class="demo-links" id="demoLinks"></span>
+      </div>
     </section>
 
     <!-- ACTIVE (hidden until valid scan) -->
     <section id="active" class="card active-box" hidden>
       <div class="stats">
         <div class="row">
-          <div class="grow">Paired with code: <strong id="pairCode">— — — —</strong></div>
+          <div class="grow">Paired with: <strong id="pairLabel">—</strong></div>
           <div class="muted">Status: <span id="status">Active</span></div>
         </div>
         <div>Session time left: <span class="count" id="countdown">—</span>s</div>
       </div>
 
       <!-- Character view (hidden during scanning, visible now) -->
-      <div class="big-char" aria-label="Paired character"></div>
+      <div class="big-char" id="bigChar" aria-label="Paired character"></div>
 
       <div class="row">
         <button class="btn" id="btnReset">Reset</button>
@@ -113,202 +119,231 @@
 
   <script src="../assets/main.js"></script>
   <script>
-  // ===== KIOSK SCRIPT (Scanning -> Active) =====
+    // ===== KIOSK SCRIPT (Scanning -> Active) =====
 
-  // DOM refs
-  const elScan = document.getElementById('scan');
-  const elActive = document.getElementById('active');
-  const elCam = document.getElementById('cam');
-  const elStatus = document.getElementById('scanStatus');
-  const elPair = document.getElementById('pairCode');
-  const elCountdown = document.getElementById('countdown');
-  const btnReset = document.getElementById('btnReset');
-  const btnSim = document.getElementById('btnSim');
-  const btnFlip = document.getElementById('btnFlip');
-  const statsBox = document.querySelector('.stats');
-  const bigChar = document.querySelector('.big-char');
+    // ENV & deep link builder (to help users open mobile demo quickly)
+    const HOST_IS_DEV = ['127.0.0.1', 'localhost'].includes(location.hostname);
+    const HOST_IS_LIVE_SERVER = HOST_IS_DEV && location.port === '5500';
+    const SUPPORTS_PATH_ROUTING = !HOST_IS_LIVE_SERVER;
 
-  // Runtime
-  const SESSION_SECONDS = 20;
-  let stream = null, detector = null, rafId = null, countdownId = null;
-  let usingUserCam = false; // false = rear/environment, true = front/user
-
-  // ---------- State handling ----------
-  function setStateScanning () {
-    elScan.hidden = false;
-    elActive.hidden = true;
-    stopCountdown();
-    startCamera()
-      .then(startDetector)
-      .catch(err => {
-        console.error(err);
-        elStatus.textContent = 'Camera/QR unavailable. You can still use Simulate Scan.';
-      });
-  }
-
-  function setStateActive (data) {
-    elScan.hidden = true;
-    elActive.hidden = false;
-    stopDetector();
-    bindActiveView(data);
-    startCountdown();
-    HOTPET.send('kiosk:paired', { code: data.code || data.petName || '' });
-  }
-
-  // ---------- Camera ----------
-  async function startCamera () {
-    stopCamera();
-    const constraints = {
-      video: { facingMode: usingUserCam ? 'user' : 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
-      audio: false
-    };
-    stream = await navigator.mediaDevices.getUserMedia(constraints);
-    elCam.srcObject = stream;
-    elStatus.textContent = 'Looking for QR…';
-  }
-
-  function stopCamera () {
-    if (rafId) cancelAnimationFrame(rafId);
-    if (stream) {
-      stream.getTracks().forEach(t => t.stop());
-      stream = null;
+    function getBasePath() {
+      const path = location.pathname;
+      const idx = path.toLowerCase().lastIndexOf('/kiosk');
+      return idx >= 0 ? path.slice(0, idx) : '';
     }
-  }
-
-  // ---------- QR detection ----------
-  async function startDetector () {
-    if (!('BarcodeDetector' in window)) {
-      elStatus.textContent = 'QR detection not supported, use Simulate Scan.';
-      return;
-    }
-    detector = new BarcodeDetector({ formats: ['qr_code'] });
-
-    const loop = async () => {
-      try {
-        if (!elCam.videoWidth) { rafId = requestAnimationFrame(loop); return; }
-        const codes = await detector.detect(elCam);
-        if (codes && codes.length) {
-          const raw = (codes[0].rawValue || '').trim();
-          const data = parsePayload(raw);
-          if (data) { setStateActive(data); return; }
-        }
-        rafId = requestAnimationFrame(loop);
-      } catch (e) {
-        console.warn('Detector error:', e);
-        elStatus.textContent = 'Detector error. You can use Simulate Scan.';
-        rafId = requestAnimationFrame(loop);
+    function buildMobileDeepLink(n) {
+      const base = getBasePath();
+      if (SUPPORTS_PATH_ROUTING) {
+        return `${location.origin}${base}/mobile/demopet${n}`;
       }
-    };
-    rafId = requestAnimationFrame(loop);
-  }
-
-  function stopDetector () {
-    if (rafId) cancelAnimationFrame(rafId);
-    rafId = null;
-    detector = null;
-  }
-
-  // ---------- Payload parsing & view binding ----------
-  // Accepts HOTPETV1:<base64json> or legacy simple alphanumeric codes
-  function parsePayload (raw) {
-    const m = raw.match(/^HOTPETV1[:\- ]?([A-Za-z0-9+/=]+)$/);
-    if (m) {
-      try {
-        const json = decodeURIComponent(escape(atob(m[1])));
-        const obj = JSON.parse(json);
-        if (obj && obj.v === 1) return obj; // {userName, petName, petSprite, discountLevel, currentPoints}
-      } catch {}
+      return `${location.origin}${base}/mobile/index.html#demopet${n}`;
     }
-    const m2 = raw.match(/^[A-Z0-9]{4,8}$/i);
-    if (m2) return { v: 0, code: m2[0].toUpperCase() };
-    return null;
-  }
+    (function renderDemoLinks(){
+      const wrap = document.getElementById('demoLinks');
+      const frag = document.createDocumentFragment();
+      for (let i=1;i<=6;i++){
+        const a = document.createElement('a');
+        a.className = 'link';
+        a.href = buildMobileDeepLink(i);
+        a.textContent = `demopet${i}`;
+        a.target = '_blank';
+        frag.appendChild(a);
+      }
+      wrap.appendChild(frag);
+    })();
 
-  function bindActiveView (data) {
-    // Title / pairing line
-    const title = data.code ? data.code : `${data.userName || 'Guest'} — ${data.petName || 'Pet'}`;
-    elPair.textContent = title;
+    // DOM refs
+    const elScan = document.getElementById('scan');
+    const elActive = document.getElementById('active');
+    const elCam = document.getElementById('cam');
+    const elStatus = document.getElementById('scanStatus');
+    const elPairLabel = document.getElementById('pairLabel');
+    const elCountdown = document.getElementById('countdown');
+    const elBigChar = document.getElementById('bigChar');
+    const btnReset = document.getElementById('btnReset');
+    const btnSim = document.getElementById('btnSim');
+    const btnFlip = document.getElementById('btnFlip');
+    const statsBox = document.querySelector('.stats');
 
-    // Big character art
-    if (data.petSprite) {
-      bigChar.style.background = `#0f1218 center/cover no-repeat url('${data.petSprite}')`;
-    } else {
-      // Fallback gradient
-      bigChar.style.background = 'radial-gradient(circle at 35% 30%, #fff7 0 20%, #0000 21%), linear-gradient(180deg, #60a5fa 0%, #3b82f6 100%)';
+    // Runtime
+    const SESSION_SECONDS = 20;
+    let stream = null, detector = null, rafId = null, countdownId = null;
+    let usingUserCam = false; // false = rear/environment, true = front/user
+
+    // ---------- State handling ----------
+    function setStateScanning () {
+      elScan.hidden = false;
+      elActive.hidden = true;
+      stopCountdown();
+      startCamera()
+        .then(startDetector)
+        .catch(err => {
+          console.error(err);
+          elStatus.textContent = 'Camera/QR unavailable. You can still use Simulate Scan.';
+        });
     }
 
-    // Clean previous extra stat (if any) and add current info
-    const oldExtra = statsBox.querySelector('.extra-line');
-    if (oldExtra) oldExtra.remove();
-    const extra = document.createElement('div');
-    extra.className = 'muted extra-line';
-    extra.textContent = (data.v === 1)
-      ? `Discount ${data.discountLevel}/5 • ${data.currentPoints} pts`
-      : 'Legacy code payload';
-    statsBox.appendChild(extra);
-  }
+    function setStateActive (data) {
+      elScan.hidden = true;
+      elActive.hidden = false;
+      stopDetector();
+      bindActiveView(data);
+      startCountdown();
+      HOTPET.send('kiosk:paired', { code: data.code || data.petName || '' });
+    }
 
-  // ---------- Countdown & reset ----------
-  function startCountdown () {
-    let left = SESSION_SECONDS;
-    elCountdown.textContent = left;
-    stopCountdown();
-    countdownId = setInterval(() => {
-      left -= 1;
+    // ---------- Camera ----------
+    async function startCamera () {
+      stopCamera();
+      const constraints = {
+        video: { facingMode: usingUserCam ? 'user' : 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false
+      };
+      stream = await navigator.mediaDevices.getUserMedia(constraints);
+      elCam.srcObject = stream;
+      elStatus.textContent = 'Looking for QR…';
+    }
+
+    function stopCamera () {
+      if (rafId) cancelAnimationFrame(rafId);
+      if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+        stream = null;
+      }
+    }
+
+    // ---------- QR detection ----------
+    async function startDetector () {
+      if (!('BarcodeDetector' in window)) {
+        elStatus.textContent = 'QR detection not supported, use Simulate Scan.';
+        return;
+      }
+      detector = new BarcodeDetector({ formats: ['qr_code'] });
+
+      const loop = async () => {
+        try {
+          if (!elCam.videoWidth) { rafId = requestAnimationFrame(loop); return; }
+          const codes = await detector.detect(elCam);
+          if (codes && codes.length) {
+            const raw = (codes[0].rawValue || '').trim();
+            const data = parsePayload(raw);
+            if (data) { setStateActive(data); return; }
+          }
+          rafId = requestAnimationFrame(loop);
+        } catch (e) {
+          console.warn('Detector error:', e);
+          elStatus.textContent = 'Detector error. You can use Simulate Scan.';
+          rafId = requestAnimationFrame(loop);
+        }
+      };
+      rafId = requestAnimationFrame(loop);
+    }
+
+    function stopDetector () {
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = null;
+      detector = null;
+    }
+
+    // ---------- Payload parsing & view binding ----------
+    // Accepts HOTPETV1:<base64json> or legacy simple alphanumeric codes
+    function parsePayload (raw) {
+      const m = raw.match(/^HOTPETV1[:\- ]?([A-Za-z0-9+/=]+)$/);
+      if (m) {
+        try {
+          const json = decodeURIComponent(escape(atob(m[1])));
+          const obj = JSON.parse(json);
+          if (obj && obj.v === 1) return obj; // {userName, petName, petSprite, discountLevel, currentPoints}
+        } catch {}
+      }
+      const m2 = raw.match(/^[A-Z0-9]{4,8}$/i);
+      if (m2) return { v: 0, code: m2[0].toUpperCase() };
+      return null;
+    }
+
+    function bindActiveView (data) {
+      // Title / pairing line
+      const title = data.code ? data.code : `${data.userName || 'Guest'} — ${data.petName || 'Pet'}`;
+      elPairLabel.textContent = title;
+
+      // Big character art
+      if (data.petSprite) {
+        elBigChar.style.background = `#0f1218 center/cover no-repeat url('${data.petSprite}')`;
+      } else {
+        elBigChar.style.background = 'radial-gradient(circle at 35% 30%, #fff7 0 20%, #0000 21%), linear-gradient(180deg, #60a5fa 0%, #3b82f6 100%)';
+      }
+
+      // Remove old extra line, add current meta
+      const oldExtra = statsBox.querySelector('.extra-line');
+      if (oldExtra) oldExtra.remove();
+      const extra = document.createElement('div');
+      extra.className = 'muted extra-line';
+      extra.textContent = (data.v === 1)
+        ? `Discount ${data.discountLevel}/5 • ${data.currentPoints} pts`
+        : 'Legacy code payload';
+      statsBox.appendChild(extra);
+    }
+
+    // ---------- Countdown & reset ----------
+    function startCountdown () {
+      let left = SESSION_SECONDS;
       elCountdown.textContent = left;
-      if (left <= 0) doReset();
-    }, 1000);
-  }
-
-  function stopCountdown () {
-    if (countdownId) clearInterval(countdownId);
-    countdownId = null;
-  }
-
-  function doReset () {
-    stopCountdown();
-    setStateScanning();
-    HOTPET.send('kiosk:reset', { code: HOTPET.getSession() });
-  }
-
-  // ---------- Controls ----------
-  btnReset.addEventListener('click', doReset);
-
-  btnSim.addEventListener('click', () => {
-    // Demo payload
-    setStateActive({
-      v: 1,
-      userName: 'Demo User',
-      petName: 'Mochi',
-      petSprite: '../assets/sprites/pet1.png',
-      discountLevel: 2,
-      currentPoints: 777
-    });
-  });
-
-  btnFlip.addEventListener('click', async () => {
-    usingUserCam = !usingUserCam;
-    await startCamera().then(() => { if (detector) startDetector(); });
-  });
-
-  // Optional: accept broadcast payloads for testing without camera
-  HOTPET.on((msg) => {
-    if (msg.type === 'mobile:show_qr' && msg.payload?.code) {
-      const data = parsePayload(msg.payload.code);
-      // Uncomment to auto-advance even without scanning:
-      // if (data) setStateActive(data);
+      stopCountdown();
+      countdownId = setInterval(() => {
+        left -= 1;
+        elCountdown.textContent = left;
+        if (left <= 0) doReset();
+      }, 1000);
     }
-  });
 
-  // ---------- Boot & cleanup ----------
-  setStateScanning();
+    function stopCountdown () {
+      if (countdownId) clearInterval(countdownId);
+      countdownId = null;
+    }
 
-  addEventListener('beforeunload', () => {
-    stopDetector();
-    stopCamera();
-    stopCountdown();
-  });
-</script>
+    function doReset () {
+      stopCountdown();
+      setStateScanning();
+      HOTPET.send('kiosk:reset', { code: HOTPET.getSession() });
+    }
 
+    // ---------- Controls ----------
+    btnReset.addEventListener('click', doReset);
+
+    btnSim.addEventListener('click', () => {
+      // Demo payload (matches your pets.json format)
+      setStateActive({
+        v: 1,
+        userName: 'Demo User',
+        petName: 'Mochi',
+        petSprite: 'https://api.dicebear.com/9.x/pixel-art/png?seed=Mochi&size=512',
+        discountLevel: 2,
+        currentPoints: 777
+      });
+    });
+
+    btnFlip.addEventListener('click', async () => {
+      usingUserCam = !usingUserCam;
+      await startCamera().then(() => { if (detector) startDetector(); });
+    });
+
+    // Optional: accept broadcast payloads for testing without camera
+    HOTPET.on((msg) => {
+      if (msg.type === 'mobile:show_qr' && msg.payload?.code) {
+        const data = parsePayload(msg.payload.code);
+        // Uncomment to auto-advance even without scanning:
+        // if (data) setStateActive(data);
+      }
+    });
+
+    // ---------- Boot & cleanup ----------
+    setStateScanning();
+
+    addEventListener('beforeunload', () => {
+      stopDetector();
+      stopCamera();
+      stopCountdown();
+    });
+  </script>
 </body>
 </html>
