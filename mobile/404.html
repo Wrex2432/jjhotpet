@@ -1,27 +1,43 @@
-<!doctype html>
-<html>
-  <head><meta charset="utf-8"><title>Redirecting…</title></head>
-  <body>
-    <script>
-      (function () {
-        var p = location.pathname;
-        // If this looks like /mobile/demopetN, rewrite to /mobile/index.html#demopetN
-        var m = p.toLowerCase().match(/(.*)\/mobile\/demopet(\d+)\b/);
-        if (m) {
-          var base = m[1] || '';
-          location.replace(base + '/mobile/index.html#demopet' + m[2] + location.search);
-          return;
-        }
-        // If this looks like /kiosk/*, send to /kiosk/index.html
-        m = p.toLowerCase().match(/(.*)\/kiosk\/.*/);
-        if (m) {
-          var base2 = m[1] || '';
-          location.replace(base2 + '/kiosk/index.html' + location.search + location.hash);
-          return;
-        }
-        // Otherwise back to /
-        location.replace('/');
-      })();
-    </script>
-  </body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <title>HotPet — Not Found</title>
+  <link rel="stylesheet" href="../assets/style.css"/>
+  <link rel="icon" href="../assets/favicon.ico"/>
+  <style>
+    .nf { display:grid; place-items:center; min-height:100dvh; padding:20px; }
+    .nf__card { width:min(100%, 560px); }
+  </style>
+</head>
+<body>
+  <div class="nf">
+    <div class="container nf__card">
+      <header class="header">
+        <h1 class="header__title">Page not found</h1>
+        <div class="header__meta small muted">HotPet — Mobile</div>
+      </header>
+      <main class="main">
+        <section class="card center">
+          <p class="muted">Taking you back to the mobile app…</p>
+          <div class="controls" style="justify-content:center;margin-top:12px;">
+            <a class="btn btn--primary" href="./">Go to Mobile</a>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    // SPA-friendly redirect: keep path for deep links like /mobile/demopet1
+    (function(){
+      var path = location.pathname.replace(/.*\/mobile\/?/, '');
+      // If there is a deep path (e.g., demopet2), send it back as part of the URL.
+      var to = './index.html' + (path ? '/' + path : '');
+      // Use replace so back button doesn't loop here
+      setTimeout(function(){ location.replace(to); }, 100);
+    })();
+  </script>
+</body>
 </html>

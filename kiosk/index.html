@@ -1,77 +1,84 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>hotpet — Kiosk</title>
-  <link rel="stylesheet" href="../assets/style.css" />
-  <link rel="stylesheet" href="./kiosk.css">
-    <script type="module" src="./kioskScript.js"></script>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <title>HotPet — Kiosk</title>
+
+  <!-- Shared base styles -->
+  <link rel="stylesheet" href="../assets/style.css"/>
+  <!-- Kiosk-specific tweaks -->
+  <link rel="stylesheet" href="./kiosk.css"/>
 </head>
-<body class="kiosk">
-  <header class="site-header">
-    <h1>Kiosk (Bipad)</h1>
-    <nav><a class="link" href="../">← Back to Menu</a></nav>
-  </header>
-
-  <main class="container pad">
-    <!-- SCANNING (default visible) -->
-    <section id="scan" class="card scan-card" aria-live="polite">
-      <div class="row" style="justify-content:space-between;">
-        <h2 class="grow">Camera</h2>
-        <div class="row">
-          <button class="btn" id="btnStart">Start Scan</button>
-          <button class="btn ghost" id="btnFlip" title="Switch camera">Flip</button>
-          <button class="btn ghost" id="btnSim" title="Dev: simulate scan">Simulate Scan</button>
+<body>
+  <div class="wrapper">
+    <div class="container container--kiosk" id="app">
+      <header class="header">
+        <h1 class="header__title">HotPet — Kiosk</h1>
+        <div class="header__meta small muted">
+          <span id="kioskStatus" class="kiosk__status">Scanner ready</span>
         </div>
-      </div>
+      </header>
 
-      <div class="preview" id="previewBox">
-        <video id="cam" autoplay playsinline muted></video>
-        <div class="reticle" aria-hidden="true"></div>
-        <div class="hud">
-          <span id="scanStatus">Camera ready. Press “Start Scan”.</span>
-          <div class="group">
-            <span id="scanBadge" class="muted">Idle</span>
+      <main class="main">
+        <!-- CAMERA VIEW (default) -->
+        <section class="view is-active" id="view-camera">
+          <div class="row">
+            <div class="stage card">
+              <video id="video" autoplay playsinline></video>
+              <canvas id="canvas" class="hidden"></canvas>
+              <div class="stage__overlay">
+                <span class="badge">Point a QR code to the camera</span>
+              </div>
+            </div>
+
+            <div class="controls">
+              <button class="btn" id="btnToggleCam">Toggle camera</button>
+              <button class="btn btn--ghost" id="btnSimulate">Simulate scan</button>
+            </div>
           </div>
-        </div>
-      </div>
+        </section>
 
-      <p class="muted">On success, we’ll hide the camera and show the character. After the timer ends, we’ll reset back here.</p>
+        <!-- CHARACTER VIEW (shown after successful scan) -->
+        <section class="view" id="view-character">
+          <div class="row">
+            <div class="grid-2">
+              <div class="card pet__card center">
+                <img id="petImage" class="pet__image" alt="Pet"/>
+                <div class="stat">
+                  <strong id="petName"></strong>
+                  <span class="muted">by</span>
+                  <span id="ownerName" class="muted"></span>
+                </div>
+                <div class="stat small">
+                  Discount Level: <strong id="discountLevel"></strong>
+                </div>
+              </div>
 
-      <div class="muted" style="font-size:13px">
-        Quick mobile demo links (open on phone):
-        <span class="demo-links" id="demoLinks"></span>
-      </div>
+              <div class="card">
+                <div class="row">
+                  <h2>Actions</h2>
+                  <div class="controls">
+                    <button class="btn btn--primary" id="btnReset">Reset (show camera)</button>
+                    <button class="btn" id="btnExtend">Extend view +10s</button>
+                  </div>
+                  <p class="muted small">
+                    Auto-reset in <span id="countdown">—</span>s.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
 
-      <!-- hidden canvas used by jsQR fallback -->
-      <canvas id="qrCanvas"></canvas>
-    </section>
-
-    <!-- ACTIVE (hidden until valid scan) -->
-    <section id="active" class="card active-box" hidden>
-      <div class="stats">
-        <div class="row">
-          <div class="grow">Paired with: <strong id="pairLabel">—</strong></div>
-          <div class="muted">Status: <span id="status">Active</span></div>
-        </div>
-        <div>Session time left: <span class="count" id="countdown">—</span>s</div>
-      </div>
-
-      <!-- Character view (hidden while scanning) -->
-      <div class="big-char" id="bigChar" aria-label="Paired character"></div>
-
-      <div class="row">
-        <button class="btn" id="btnReset">Reset</button>
-        <span class="muted">Returns to camera and hides the character.</span>
-      </div>
-    </section>
-  </main>
-
-  <footer class="site-footer">© <span id="year"></span> hotpet</footer>
-
+  <!-- Shared helpers -->
   <script src="../assets/main.js"></script>
-  <!-- jsQR fallback (tiny, MIT). Works offline once cached. -->
-  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+  <!-- QR decode lib -->
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+  <!-- Kiosk logic -->
+  <script src="./kioskScript.js"></script>
 </body>
 </html>

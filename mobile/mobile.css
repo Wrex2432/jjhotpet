@@ -1,15 +1,16 @@
+/* HotPet — Mobile specific tweaks
+   (Relies on base tokens/classes from assets/style.css) */
 
-    .wrap { min-height: calc(100dvh - 140px); position: relative; }
-    .row { display: flex; gap: 10px; flex-wrap: wrap; }
-    .grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
-    .pet { background: var(--panel); border-radius: 14px; padding: 12px; display: grid; gap: 8px; }
-    .pet img { width: 100%; aspect-ratio: 1/1; object-fit: contain; border-radius: 10px; background:#0f1218; }
-    .muted { color: var(--muted); }
-    .character {
-      width: min(64vw, 420px); aspect-ratio:1/1; border-radius:50%;
-      margin: 12px auto; background:#0f1218 center/cover no-repeat;
-      box-shadow: 0 10px 30px rgba(0,0,0,.35), inset 0 8px 24px rgba(255,255,255,.15);
-    }
-    .qr { display:grid; place-items:center; margin: 12px 0; }
-    .qr img { width:min(70vw, 520px); aspect-ratio:1/1; background:#0f1218; border-radius:12px; }
-    .dock { position: fixed; inset: auto 16px 20px 16px; display:flex; gap:10px; justify-content:center; }
+.home-actions { display: grid; gap: 10px; }
+
+#qrOnly #qr canvas, #qrOnly #qr img {
+  width: min(80%, 360px);
+}
+
+/* Slightly tighter container on very small screens */
+@media (max-width: 380px){
+  .container { border-radius: 10px; }
+}
+
+/* Slightly larger buttons for thumb comfort */
+.btn { padding: 12px 16px; }

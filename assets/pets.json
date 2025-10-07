@@ -1,8 +1,44 @@
 [
-  ["Iza",   "Mochi", "https://api.dicebear.com/9.x/pixel-art/png?seed=Mochi&size=512", 3, 1200],
-  ["Liter", "Bolt",  "https://api.dicebear.com/9.x/pixel-art/png?seed=Bolt&size=512", 1, 340],
-  ["Mik","Nori",  "https://api.dicebear.com/9.x/pixel-art/png?seed=Nori&size=512", 5, 5020],
-  ["Jay", "Pip",   "https://api.dicebear.com/9.x/pixel-art/png?seed=Pip&size=512", 0, 75],
-  ["Neja",   "Kumo",  "https://api.dicebear.com/9.x/pixel-art/png?seed=Kumo&size=512", 2, 890],
-  ["Sai", "Zest",  "https://api.dicebear.com/9.x/pixel-art/png?seed=Zest&size=512", 4, 2715]
+  {
+    "UserName": "Iza",
+    "PetName": "Mochi",
+    "PetSpriteSrc": "https://api.dicebear.com/9.x/pixel-art/png?seed=Mochi&size=512",
+    "DiscountLevel": 3,
+    "Coins": 1200
+  },
+  {
+    "UserName": "Liter",
+    "PetName": "Bolt",
+    "PetSpriteSrc": "https://api.dicebear.com/9.x/pixel-art/png?seed=Bolt&size=512",
+    "DiscountLevel": 1,
+    "Coins": 340
+  },
+  {
+    "UserName": "Mik",
+    "PetName": "Nori",
+    "PetSpriteSrc": "https://api.dicebear.com/9.x/pixel-art/png?seed=Nori&size=512",
+    "DiscountLevel": 5,
+    "Coins": 5020
+  },
+  {
+    "UserName": "Jay",
+    "PetName": "Pip",
+    "PetSpriteSrc": "https://api.dicebear.com/9.x/pixel-art/png?seed=Pip&size=512",
+    "DiscountLevel": 0,
+    "Coins": 75
+  },
+  {
+    "UserName": "Neja",
+    "PetName": "Kumo",
+    "PetSpriteSrc": "https://api.dicebear.com/9.x/pixel-art/png?seed=Kumo&size=512",
+    "DiscountLevel": 2,
+    "Coins": 890
+  },
+  {
+    "UserName": "Sai",
+    "PetName": "Zest",
+    "PetSpriteSrc": "https://api.dicebear.com/9.x/pixel-art/png?seed=Zest&size=512",
+    "DiscountLevel": 4,
+    "Coins": 2715
+  }
 ]

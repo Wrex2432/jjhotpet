@@ -1,113 +1,199 @@
-/* --- Tiny reset --- */
-*,
-*::before,
-*::after { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; height: 100%; }
-img { max-width: 100%; display: block; }
-button, input, select, textarea { font: inherit; }
+/* =========================
+   HotPet — Core Styles (2025)
+   - Minimal reset
+   - Design tokens via :root
+   - Responsive layout primitives
+   ========================= */
 
-/* --- Theme vars --- */
-:root {
-  --bg: #0b0c10;
-  --panel: #15171c;
-  --text: #eef1f6;
-  --muted: #99a2b2;
-  --brand: #6ee7b7;   /* mint */
-  --brand-ghost: #2a2f38;
-  --radius: 18px;
-  --pad: 18px;
-  --maxw: 960px;
-  --shadow: 0 8px 24px rgba(0,0,0,.34);
+/* --- Reset --- */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; }
+body, h1, h2, h3, h4, h5, h6, p, figure, blockquote, dl, dd { margin: 0; }
+ul[role="list"], ol[role="list"] { list-style: none; padding: 0; margin: 0; }
+img, picture, video, canvas, svg { display: block; max-width: 100%; }
+input, button, textarea, select { font: inherit; }
+a { color: inherit; text-decoration: none; }
+button { cursor: pointer; border: 0; background: none; }
+
+/* --- Design tokens --- */
+:root{
+  --maxw-desktop: 1100px;
+  --space-1: 6px;
+  --space-2: 10px;
+  --space-3: 16px;
+  --space-4: 20px;
+
+  --radius: 14px;
+
+  --bg: #0b0f14;
+  --panel: #121922;
+  --muted: #6b7a90;
+  --text: #e8eef6;
+
+  --accent: #7bdcff;
+  --accent-2: #ff77b0;
+
+  color-scheme: dark light;
 }
 
-/* --- Layout --- */
-body {
-  background: radial-gradient(1200px 800px at 50% -10%, #1b1f27 0%, var(--bg) 60%);
+/* --- Base --- */
+html, body {
+  background: var(--bg);
   color: var(--text);
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue",
-               Arial, "Apple Color Emoji", "Segoe UI Emoji";
-  line-height: 1.45;
-  display: grid;
-  grid-template-rows: auto 1fr auto;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+}
+
+/* --- Layout primitives --- */
+.wrapper {
   min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: clamp(8px, 2vw, 24px);
 }
-
-.site-header, .site-footer {
-  padding: calc(var(--pad) * 1.2) var(--pad);
-  max-width: var(--maxw);
-  width: 100%;
-  margin-inline: auto;
-}
-
-.site-header h1 {
-  margin: 0 0 4px 0;
-  letter-spacing: .5px;
-}
-.tag { color: var(--muted); margin: 0; }
 
 .container {
-  max-width: var(--maxw);
-  width: 100%;
-  margin: 24px auto;
-  padding: 0 var(--pad);
-}
-
-.card {
+  width: min(100%, var(--maxw-desktop));
   background: var(--panel);
+  border: 1px solid rgba(255,255,255,.08);
   border-radius: var(--radius);
-  padding: calc(var(--pad) * 1.5);
-  box-shadow: var(--shadow);
+  box-shadow: 0 10px 30px rgba(0,0,0,.35);
+  overflow: clip;
 }
 
-/* --- Menu --- */
-.menu {
-  display: grid;
-  gap: 14px;
-  justify-items: start;
+.header {
+  display: flex;
   align-items: center;
-  padding-block: 28px;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: linear-gradient(180deg, rgba(255,255,255,.04), transparent);
+  border-bottom: 1px solid rgba(255,255,255,.06);
 }
 
+.header__title { font-size: clamp(18px, 2vw, 22px); letter-spacing: .3px; }
+.header__meta { display: flex; gap: 8px; align-items: center; color: var(--muted); font-size: 13px; }
+
+.main {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-3);
+}
+
+/* Cards */
+.card {
+  background: rgba(0,0,0,.2);
+  border: 1px solid rgba(255,255,255,.06);
+  border-radius: var(--radius);
+  padding: var(--space-3);
+}
+
+/* Grids */
+.row { display: grid; gap: var(--space-3); }
+
+.grid-2 {
+  display: grid; gap: var(--space-3);
+  grid-template-columns: 1fr 1fr;
+}
+@media (max-width: 900px){
+  .grid-2 { grid-template-columns: 1fr; }
+}
+
+/* Buttons */
 .btn {
-  appearance: none;
-  border: none;
-  background: var(--brand);
-  color: #0a0b0e;
-  font-weight: 700;
-  padding: 14px 18px;
-  border-radius: 12px;
-  text-decoration: none;
-  box-shadow: 0 6px 14px rgba(110,231,183,.25);
-  transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease;
-}
-.btn:hover { transform: translateY(-1px); }
-.btn:active { transform: translateY(0); opacity: .9; }
-
-.btn.ghost {
-  background: var(--brand-ghost);
+  background: #1b2634;
   color: var(--text);
-  box-shadow: none;
-  border: 1px solid #2f3540;
+  border: 1px solid rgba(255,255,255,.08);
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-weight: 600;
+  transition: transform .12s ease, background .2s ease, border-color .2s ease;
+}
+.btn:hover { transform: translateY(-1px); border-color: rgba(255,255,255,.15); }
+.btn--primary { background: linear-gradient(90deg, var(--accent), var(--accent-2)); color: #061016; border: none; }
+.btn--ghost { background: transparent; border: 1px dashed rgba(255,255,255,.18); color: var(--muted); }
+.controls { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Views (for SPA-like toggling) */
+.view { display: none; }
+.view.is-active { display: block; }
+
+/* Stage (camera, images, etc.) */
+.stage {
+  position: relative;
+  border-radius: var(--radius);
+  overflow: hidden;
+  aspect-ratio: 16/9;
+  background: #0a0f16;
+  border: 1px solid rgba(255,255,255,.06);
+}
+.stage > video,
+.stage > canvas,
+.stage > img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+.stage__overlay {
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  background: linear-gradient(180deg, rgba(0,0,0,.0), rgba(0,0,0,.35));
+  pointer-events: none;
+}
+.badge {
+  display: inline-flex;
+  align-items: center; gap: 8px;
+  padding: 6px 10px;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 999px;
+  font-size: 12px;
 }
 
-/* --- Links --- */
-.link {
-  color: var(--brand);
-  text-decoration: none;
+/* Pet display */
+.pet {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: 240px 1fr;
 }
-.link:hover { text-decoration: underline; }
+@media (max-width: 700px){
+  .pet { grid-template-columns: 1fr; }
+}
+.pet__card {
+  display: grid;
+  gap: 10px;
+  place-items: center;
+  padding: 16px;
+}
+.pet__image { width: min(100%, 220px); height: auto; }
+.stat { color: var(--muted); font-size: 14px; }
+.stat strong { color: var(--text); }
 
-/* --- Page-specific hooks (optional) --- */
-body.kiosk .card { border: 1px dashed #2c3442; }
-body.mobile .card { border: 1px dashed #2c4234; }
+/* List blocks */
+.list { display: grid; gap: 10px; }
+.list__item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px;
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 10px;
+}
+.list__thumb { width: 56px; height: 56px; border-radius: 8px; object-fit: cover; }
 
-/* --- Footer --- */
-.site-footer {
-  color: var(--muted);
-  font-size: 14px;
-  text-align: center;
-  opacity: .9;
+/* QR box */
+.qr {
+  display: grid; place-items: center; padding: 20px;
+}
+.qr canvas, .qr img {
+  width: min(70%, 320px); height: auto;
+  border-radius: 8px; background:#fff; padding: 10px;
 }
 
-/* add somewhere near other utilities */
+/* Kiosk full-bleed (opt-in on kiosk page) */
+.container--kiosk {
+  width: 100%; height: 100dvh; max-width: none; border-radius: 0;
+}
+
+/* Helpers */
+.hidden { display: none !important; }
 .muted { color: var(--muted); }
+.small { font-size: 13px; }
+.center { text-align: center; }

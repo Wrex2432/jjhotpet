@@ -1,48 +1,79 @@
-// ===== hotpet core helpers =====
-const HOTPET = (() => {
-  const CHANNEL = new BroadcastChannel('hotpet');
+/* =========================
+   HotPet — Core JS (2025)
+   - DOM helpers
+   - Fetch helpers
+   - View toggling
+   - Simple router (hash)
+   - Optional camera helpers (used by kiosk later)
+   ========================= */
 
-  // session code helpers
-  function makeCode(len = 4) {
-    const alpha = 'ABCDEFGHJKMNPQRSTUWXYZ23456789';
-    let s = '';
-    for (let i = 0; i < len; i++) s += alpha[Math.floor(Math.random() * alpha.length)];
-    return s;
-  }
-  function getSession() {
-    let code = localStorage.getItem('hotpet:code');
-    if (!code) {
-      code = makeCode();
-      localStorage.setItem('hotpet:code', code);
+(function () {
+  // ---------- DOM ----------
+  const $  = (sel, ctx = document) => ctx.querySelector(sel);
+  const $$ = (sel, ctx = document) => Array.from(ctx.querySelectorAll(sel));
+
+  // Event helper (with optional delegation)
+  function on(el, type, selectorOrHandler, maybeHandler) {
+    if (!el) return;
+    if (typeof selectorOrHandler === 'function') {
+      el.addEventListener(type, selectorOrHandler);
+      return;
     }
-    return code;
-  }
-  function setSession(code) {
-    localStorage.setItem('hotpet:code', code);
-  }
-
-  function send(type, payload = {}) {
-    CHANNEL.postMessage({ type, payload, at: Date.now() });
-  }
-  function on(fn) {
-    CHANNEL.addEventListener('message', (ev) => fn(ev.data));
+    const selector = selectorOrHandler;
+    const handler  = maybeHandler;
+    el.addEventListener(type, (e) => {
+      const target = e.target.closest(selector);
+      if (target && el.contains(target)) handler(e, target);
+    });
   }
 
-  return { getSession, setSession, send, on };
-})();
+  // View toggling
+  function show(el) { el?.classList.add('is-active'); }
+  function hide(el) { el?.classList.remove('is-active'); }
+  function swap(toShow, ...toHide) { show(toShow); toHide.forEach(hide); }
 
-// year footer
-(function initYear () {
-  var y = document.getElementById('year');
-  if (y) y.textContent = new Date().getFullYear();
-})();
+  // ---------- Utils ----------
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  function getQuery() {
+    const p = new URLSearchParams(location.search);
+    return Object.fromEntries(p.entries());
+  }
+  async function fetchJSON(url, fallback = []) {
+    try {
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return await res.json();
+    } catch (e) {
+      console.warn('fetchJSON fallback for', url, e);
+      return fallback;
+    }
+  }
 
-// shortcuts on home
-(function initShortcuts () {
-  const isRoot = location.pathname.endsWith('/') || location.pathname.endsWith('/index.html');
-  if (!isRoot) return;
-  addEventListener('keydown', (e) => {
-    if (e.key.toLowerCase() === 'k') location.href = './kiosk/';
-    if (e.key.toLowerCase() === 'm') location.href = './mobile/';
-  });
+  // Tiny hash router
+  function onRoute(handler) {
+    window.addEventListener('hashchange', handler);
+    handler();
+  }
+
+  // ---------- Optional: Camera helpers (kiosk can call these) ----------
+  async function startCamera(videoEl, facingMode = 'environment') {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode },
+      audio: false
+    });
+    videoEl.srcObject = stream;
+    return stream;
+  }
+
+  function stopCamera(stream) {
+    if (!stream) return;
+    stream.getTracks().forEach(t => t.stop());
+  }
+
+  // ---------- Expose on window for other pages to reuse ----------
+  window.HotPet = {
+    $, $$, on, show, hide, swap,
+    sleep, getQuery, fetchJSON, onRoute,
+    startCamera, stopCamera,
+  };
 })();

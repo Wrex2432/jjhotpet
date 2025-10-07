@@ -1,65 +1,87 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>hotpet — Mobile</title>
-  <link rel="stylesheet" href="../assets/style.css" />
-  <link rel="stylesheet" href="./mobile.css">
-  <script type="module" src="./mobileScript.js"></script>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <title>HotPet — Mobile</title>
 
+  <!-- Shared base styles -->
+  <link rel="stylesheet" href="../assets/style.css"/>
+  <!-- Mobile-specific tweaks -->
+  <link rel="stylesheet" href="./mobile.css"/>
+  <link rel="icon" href="../assets/favicon.ico"/>
 </head>
-<body class="mobile">
-  <header class="site-header">
-    <h1>Mobile View</h1>
-    <nav><a class="link" href="../">← Back to Menu</a></nav>
-  </header>
+<body>
+  <div class="wrapper">
+    <div class="container" id="app">
+      <header class="header">
+        <h1 class="header__title">HotPet — Mobile</h1>
+        <div class="header__meta small muted"><span id="modeNote">Home</span></div>
+      </header>
 
-  <main class="container wrap">
-    <!-- home: two choices -->
-    <section id="home" class="card">
-      <h2>What would you like to do?</h2>
-      <div class="row" style="margin-top:8px">
-        <button id="goView" class="btn">View current pet</button>
-        <button id="goList" class="btn ghost">Browse available pets</button>
-      </div>
-      <p class="muted" id="currentHint" style="margin-top:10px;"></p>
-    </section>
+      <main class="main">
+        <!-- HOME -->
+        <section class="view is-active" id="view-home">
+          <div class="card">
+            <div class="home-actions">
+              <button class="btn btn--primary" id="btnShowCurrent">Show current pet</button>
+              <button class="btn" id="btnListPets">View list of pets</button>
+              <button class="btn" id="btnBackgrounds">Change background</button>
+            </div>
+          </div>
+        </section>
 
-    <!-- browse list -->
-    <section id="list" class="card" hidden>
-      <div class="row" style="justify-content:space-between; align-items:center;">
-        <h2>Choose your pet</h2>
-        <a class="link" href="#" id="backFromList">← Back</a>
-      </div>
-      <div id="petGrid" class="grid" style="margin-top:10px;"></div>
-    </section>
+        <!-- CURRENT PET (QR hidden by default; toggle replaces pet with only QR) -->
+        <section class="view" id="view-current">
+          <div class="row">
+            <div class="card pet__card center" id="petCard">
+              <img id="curPetImg" class="pet__image" alt="Pet"/>
+              <div class="stat"><strong id="curPetName"></strong>
+                <span class="muted">owned by</span> <span id="curOwner" class="muted"></span></div>
+              <div class="stat small">Discount Level: <strong id="curDisc"></strong></div>
 
-    <!-- view current pet -->
-    <section id="view" class="card" hidden>
-      <div class="row" style="justify-content:space-between; align-items:center;">
-        <h2>Your pet</h2>
-        <a class="link" href="#" id="backFromView">← Back</a>
-      </div>
+              <div class="controls">
+                <button class="btn" id="btnToggleQR">Show QR</button>
+                <button class="btn btn--ghost" id="btnBackHome1">Back</button>
+              </div>
+            </div>
 
-      <div id="petStats" class="muted" style="margin-top:6px;"></div>
-      <div id="character" class="character"></div>
+            <!-- When QR is shown, we hide #petCard and show only this block -->
+            <div class="card qr center hidden" id="qrOnly">
+              <div id="qr"></div>
+              <div class="controls" style="justify-content:center;margin-top:12px;">
+                <button class="btn" id="btnHideQR">Hide QR</button>
+                <button class="btn btn--ghost" id="btnBackHome1b">Back</button>
+              </div>
+              <p class="small muted" style="margin-top:6px;">Scan to send this pet to the kiosk</p>
+            </div>
+          </div>
+        </section>
 
-      <div class="row" style="margin-top:8px;">
-        <button id="btnShowQR" class="btn">Show QR for this pet</button>
-      </div>
+        <!-- PET LIST -->
+        <section class="view" id="view-list">
+          <div class="card list" id="petList"></div>
+          <div class="controls">
+            <button class="btn btn--ghost" id="btnBackHome2">Back</button>
+          </div>
+        </section>
 
-      <div id="qrWrap" class="qr" hidden>
-        <img id="qrImg" alt="Join QR" />
-        <p class="muted">Have the kiosk scan this.</p>
-      </div>
-    </section>
-  </main>
+        <!-- BACKGROUNDS -->
+        <section class="view" id="view-backgrounds">
+          <div class="card list" id="bgList"></div>
+          <div class="controls">
+            <button class="btn btn--ghost" id="btnBackHome3">Back</button>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
 
-  <footer class="site-footer">© <span id="year"></span> hotpet</footer>
-
+  <!-- Shared helpers -->
   <script src="../assets/main.js"></script>
-
-
+  <!-- QR generator -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
+  <!-- Mobile logic -->
+  <script src="./mobileScript.js"></script>
 </body>
 </html>
