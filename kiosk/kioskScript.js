@@ -1,66 +1,81 @@
-/* HotPet — Kiosk (cam → loading → pet; simulate via hidden button or 'Q')
-   - Uses the SAME IDs as the mobile pet block:
-     #petSprite, #petName, #petType, #levelNum, #xpFill, #xpNow, #xpMax, #petDesc
-   - Accepts QR payloads:
-       • Full keys: UserName, PetName, PetType, PetSpriteSrc, DiscountLevel, PointsTotal, MaxPointsNeedForNextLevel, Quips
-       • Compact:   {u,n,t,s,d,p,m,q}
-       • Index:     {i} or "i=3" or "3" → resolves from ../assets/pets.json
+/* HotPet — Kiosk
+   - Works with a local pets.json copy inside /kiosk (PETS_URL = "./pets.json")
+   - Hydrates full pet data via { i } from QR
+   - Renders: @username pill, name, type, level, XP bar/labels, quip, sprite
+   - Press "Q" to simulate a scan (index 0)
 */
 
 (function () {
-  // ---------- Config ----------
-  const LOADING_SECONDS = 0.2;   // spinner duration
-  const PET_SECONDS     = 25;    // time to show pet view before auto-reset
-  const PETS_PATH       = '../assets/pets.json';
+  // =========================
+  // Config
+  // =========================
+  const PETS_URL       = './pets.json'; // <= kiosk-local copy
+  const LOADING_SEC    = 1.0;           // spinner duration before showing pet
+  const PET_VIEW_SEC   = 15;            // auto-return to camera after N seconds
 
-  // ---------- DOM ----------
-  const $ = (s) => document.querySelector(s);
-  const usernameEl = document.querySelector('#username');
+  // =========================
+  // DOM
+  // =========================
+  const $id = (id) => document.getElementById(id);
 
   // Views
-  const viewCam  = $('#view-camera');
-  const viewLoad = $('#view-loading');
-  const viewPet  = $('#view-pet');
+  const viewCam  = $id('view-camera');
+  const viewLoad = $id('view-loading');
+  const viewPet  = $id('view-pet');
 
   // Camera
-  const video  = $('#video');
-  const canvas = $('#canvas');
+  const video  = $id('video');
+  const canvas = $id('canvas');
 
-  // Pet view (MUST match mobile IDs)
-  const imgEl    = $('#petSprite');
-  const nameEl   = $('#petName');
-  const typeEl   = $('#petType');
-  const levelEl  = $('#levelNum');
-  const xpFill   = $('#xpFill');
-  const xpNowEl  = $('#xpNow');
-  const xpMaxEl  = $('#xpMax');
-  const quipEl   = $('#petDesc');
+  // Pet view (MUST match your mobile block IDs)
+  const petSprite = $id('petSprite');
+  const petName   = $id('petName');
+  const petType   = $id('petType');
+  const levelNum  = $id('levelNum');
+  const xpFill    = $id('xpFill');
+  const xpNow     = $id('xpNow');
+  const xpMax     = $id('xpMax');
+  const petDesc   = $id('petDesc');
 
-  // Simulate button (invisible)
-  const btnSim   = $('#btnSimulate');
+  // Username pill (header you added)
+  const usernameEl = $id('username');
 
-  // ---------- State ----------
+  // Optional simulate button (invisible)
+  const btnSim = $id('btnSimulate');
+
+  // =========================
+  // State
+  // =========================
   let stream = null;
   let rafId  = null;
   let backTimer = null;
 
-  // ---------- Small utils ----------
-  const show = (el) => { el?.classList.remove('hidden'); el?.classList.add('is-active'); };
-  const hide = (el) => { el?.classList.add('hidden'); el?.classList.remove('is-active'); };
+  // =========================
+  // Utils
+  // =========================
+  function show(el){ el?.classList.remove('hidden'); el?.classList.add('is-active'); }
+  function hide(el){ el?.classList.add('hidden'); el?.classList.remove('is-active'); }
+  function toInt(v, def=0){ const n = Number(v); return Number.isFinite(n) ? (n|0) : def; }
 
+  function normalizeSpritePath(src){
+    if (!src) return '';
+    if (/^https?:/i.test(src)) return src; // already absolute
+    // if JSON already points to ../assets/..., keep it
+    if (/^\.\.\/assets\//.test(src)) return src;
+    // otherwise make it relative to /kiosk/ → ../assets/...
+    return '../assets/' + String(src).replace(/^\.?\/?assets\//,'');
+  }
 
-
-  function toInt(n, def=0){ n = Number(n); return Number.isFinite(n) ? n|0 : def; }
-
-  // ---------- Camera ----------
+  // =========================
+  // Camera + Scanner
+  // =========================
   async function startCamera() {
     try {
-      const s = await navigator.mediaDevices.getUserMedia({
+      stream = await navigator.mediaDevices.getUserMedia({
         audio: false,
         video: { facingMode: 'environment' }
       });
-      stream = s;
-      video.srcObject = s;
+      video.srcObject = stream;
       await video.play();
       startScanning();
     } catch (err) {
@@ -76,7 +91,42 @@
     if (video) video.srcObject = null;
   }
 
-  // ---------- Views ----------
+  function startScanning(){
+    stopScanning();
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true }); // perf hint
+
+    const tick = () => {
+      if (!stream || !video || video.readyState !== video.HAVE_ENOUGH_DATA) {
+        rafId = requestAnimationFrame(tick);
+        return;
+      }
+      canvas.width  = video.videoWidth  || 640;
+      canvas.height = video.videoHeight || 480;
+
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const code = jsQR(imgData.data, imgData.width, imgData.height, {
+        inversionAttempts: 'dontInvert'
+      });
+
+      if (code && code.data) {
+        console.log(code)
+        onScan(code.data);
+        return; // stop loop until we switch back
+      }
+      rafId = requestAnimationFrame(tick);
+    };
+    rafId = requestAnimationFrame(tick);
+  }
+  function stopScanning(){
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = null;
+  }
+
+  // =========================
+  // Views
+  // =========================
   function showCameraView(){
     stopScanning();
     hide(viewLoad); hide(viewPet);
@@ -96,17 +146,20 @@
     renderPet(pet);
     show(viewPet);
     clearPetTimer();
-    backTimer = setTimeout(showCameraView, PET_SECONDS * 1000);
+    backTimer = setTimeout(showCameraView, PET_VIEW_SEC * 1000);
   }
 
-  // ---------- Data ----------
+  // =========================
+  // Data: pets.json + resolve
+  // =========================
   async function loadPets() {
     try {
-      const res = await fetch(PETS_PATH, { cache: 'no-store' });
+      const res = await fetch(PETS_URL, { cache: 'no-store' });
       if (!res.ok) throw new Error('HTTP ' + res.status);
       return await res.json();
     } catch (e) {
       console.error('[kiosk] pets.json failed, using fallback', e);
+      // Fallback sample so UI still renders
       return [{
         UserName: 'Iza',
         PetName: 'Chub Shrimp',
@@ -119,15 +172,6 @@
       }];
     }
   }
-  function normTxt(s){
-  return String(s||'')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g,'')   // strip spaces/punct
-    .trim();
-}
-function fileBase(s){
-  return String(s||'').split('/').pop().toLowerCase();
-}
 
   function normPet(p){
     return {
@@ -141,138 +185,111 @@ function fileBase(s){
       Quips: p.Quips ?? p.q ?? ''
     };
   }
-  async function resolvePayload(text){
-    let raw = null;
 
-    // JSON? → parse
-    try { raw = JSON.parse(text); } catch {}
-
-    // not JSON? accept "3" or "i=3"
-    if (!raw) {
-      const plain = String(text).trim();
-      const mNum = plain.match(/^\d+$/);
-      const mI   = plain.match(/^[iI]\s*=\s*(\d+)$/);
-      if (mNum) raw = { i: parseInt(mNum[0], 10) };
-      else if (mI) raw = { i: parseInt(mI[1], 10) };
-    }
-    if (!raw) return null;
-
-    let pet = normPet(raw);
-    const idx = Number.isInteger(raw.i) ? raw.i : null;
-
-    // If we only have partial data or index → hydrate from dataset
-    // If we only have partial data or index → hydrate from dataset
-if (!pet.PetSpriteSrc || idx !== null) {
-  const list = await loadPets();
-  let match = null;
-
-  // 1) direct index
-  if (idx !== null && list[idx]) match = list[idx];
-
-  if (!match && list.length) {
-    const wantName  = normTxt(pet.PetName);
-    const wantUser  = normTxt(pet.UserName);
-    const wantBase  = fileBase(pet.PetSpriteSrc);
-
-    // 2) strong match by (UserName + PetName)
-    match = list.find(x => normTxt(x.UserName) === wantUser && normTxt(x.PetName) === wantName) || null;
-
-    // 3) match by PetName only (normalized)
-    if (!match && wantName) {
-      match = list.find(x => normTxt(x.PetName) === wantName) || null;
-    }
-
-    // 4) match by sprite filename (basename only)
-    if (!match && wantBase) {
-      match = list.find(x => fileBase(x.PetSpriteSrc) === wantBase) || null;
-    }
-
-    // 5) soft fallback: startsWith on name (lets "chonk" hit "chub" if they share prefix)
-    if (!match && wantName) {
-      match = list.find(x => normTxt(x.PetName).startsWith(wantName) || wantName.startsWith(normTxt(x.PetName))) || null;
-    }
-  }
-
-  if (match) {
-    const m = normPet(match);
-    pet = { ...m, ...pet, PetSpriteSrc: pet.PetSpriteSrc || m.PetSpriteSrc };
-  }
-}
-
-
-    // Make sprite URL absolute-ish relative to kiosk
-    if (pet.PetSpriteSrc && !/^https?:/i.test(pet.PetSpriteSrc)) {
-      if (!pet.PetSpriteSrc.startsWith('../')) {
-        pet.PetSpriteSrc = '../assets/' + pet.PetSpriteSrc.replace(/^\.?\/?assets\//, '');
-      }
-    }
-    return pet;
-  }
-
-  // ---------- Render (IDs match mobile) ----------
-function renderPet(p){
+// Helper: parse index from a variety of QR formats
+function parseIndexFromQR(text){
+  const raw = String(text || '').trim();
+  // try JSON first
   try {
-    imgEl.src = p.PetSpriteSrc || '';
-    imgEl.alt = p.PetName || 'Pet';
+    const obj = JSON.parse(raw);
+    if (obj && typeof obj === 'object' && Number.isInteger(obj.i)) return obj.i;
+  } catch {}
+  // URI-encoded JSON?
+  try {
+    const obj2 = JSON.parse(decodeURIComponent(raw));
+    if (obj2 && typeof obj2 === 'object' && Number.isInteger(obj2.i)) return obj2.i;
+  } catch {}
+  // plain "7"
+  const mNum = raw.match(/^\d+$/);
+  if (mNum) return parseInt(mNum[0], 10);
+  // "i=7" (with spaces allowed)
+  const mI = raw.match(/^[iI]\s*=\s*(\d+)$/);
+  if (mI) return parseInt(mI[1], 10);
+  return null;
+}
 
-    // NEW: username pill
-    if (usernameEl) usernameEl.textContent = p.UserName ? `@${p.UserName}` : '@player';
+// REPLACE your resolvePayload with this:
+async function resolvePayload(text){
+  console.groupCollapsed('[kiosk] resolvePayload(index-only)');
+  console.log('QR raw:', text);
 
-    nameEl.textContent  = p.PetName || '';
-    typeEl.textContent  = p.PetType || '';
-    levelEl.textContent = String(p.DiscountLevel ?? 0);
+  const idx = parseIndexFromQR(text);
+  console.log('parsed index:', idx);
 
-    const max = Math.max(1, toInt(p.MaxPointsNeedForNextLevel, 1000));
-    const now = Math.max(0, toInt(p.PointsTotal, 0));
-    const pct = Math.min(100, (now / max) * 100);
-    xpFill.style.width = pct.toFixed(1) + '%';
-    xpNowEl.textContent = String(now);
-    xpMaxEl.textContent = String(max);
-
-    quipEl.textContent = p.Quips || '';
-  } catch (e) {
-    console.error('[kiosk] render error', e);
+  if (!Number.isInteger(idx) || idx < 0) {
+    console.warn('No valid index in QR payload.');
+    console.groupEnd();
+    return null;
   }
+
+  const list = await loadPets();
+  console.log('pets count:', Array.isArray(list) ? list.length : 0);
+
+  const rec = Array.isArray(list) ? list[idx] : null;
+  if (!rec) {
+    console.warn('Index out of range for pets.json:', idx);
+    console.groupEnd();
+    return null;
+  }
+
+  // Take the dataset record AS SOURCE OF TRUTH
+  const pet = normPet(rec);
+
+  // Ensure sprite path resolves from /kiosk/
+  pet.PetSpriteSrc = normalizeSpritePath(pet.PetSpriteSrc);
+
+  console.log('resolved pet (final):', pet);
+  console.groupEnd();
+  return pet;
 }
 
 
-  // ---------- Scanning (jsQR) ----------
-  function startScanning(){
-    stopScanning();
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+  // =========================
+  // Render
+  // =========================
+  function renderPet(p){
+    try {
+      // sprite
+      petSprite.src = p.PetSpriteSrc || '';
+      petSprite.alt = p.PetName || 'Pet';
 
-    const tick = () => {
-      if (!stream || !video || video.readyState !== video.HAVE_ENOUGH_DATA) {
-        rafId = requestAnimationFrame(tick);
-        return;
-      }
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const code = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: 'dontInvert' });
-      if (code?.data) {
-        onScan(code.data);
-        return;
-      }
-      rafId = requestAnimationFrame(tick);
-    };
-    rafId = requestAnimationFrame(tick);
-  }
-  function stopScanning(){
-    if (rafId) cancelAnimationFrame(rafId);
-    rafId = null;
+      // username pill
+      if (usernameEl) usernameEl.textContent = p.UserName ? `@${p.UserName}` : '@player';
+      console.log(p)
+      // text fields
+      petName.textContent  = p.PetName || '';
+      petType.textContent  = p.PetType || '';
+      levelNum.textContent = String(p.DiscountLevel ?? 0);
+
+      // XP
+      const max = Math.max(1, toInt(p.MaxPointsNeedForNextLevel, 1000));
+      const now = Math.max(0, toInt(p.PointsTotal, 0));
+      const pct = Math.min(100, (now / max) * 100);
+
+      xpFill.style.width = pct.toFixed(1) + '%';
+      xpNow.textContent  = String(now);
+      xpMax.textContent  = String(max);
+
+      // quip
+      petDesc.textContent = p.Quips || '';
+    } catch (e) {
+      console.error('[kiosk] render error', e);
+    }
   }
 
+  // =========================
+  // Scan handling
+  // =========================
   async function onScan(data){
     try {
       stopCamera();
       stopScanning();
       showLoading();
       const pet = await resolvePayload(data);
+      console.log("log");
+      console.log(pet);
       if (!pet) throw new Error('Bad QR payload');
-      setTimeout(() => showPetView(pet), LOADING_SECONDS * 1000);
+      setTimeout(() => showPetView(pet), LOADING_SEC * 1000);
     } catch (e) {
       console.error('[kiosk] scan error', e);
       alert('Could not read QR — try again.');
@@ -280,18 +297,22 @@ function renderPet(p){
     }
   }
 
-  // ---------- Simulate ----------
-  async function simulateScan(){
+  // =========================
+  // Simulate
+  // =========================
+  function simulateScan(){
     const sample = JSON.stringify({ i: 0 }); // demo index 0
     onScan(sample);
   }
 
-  // ---------- Events ----------
+  // =========================
+  // Events + Init
+  // =========================
   btnSim?.addEventListener('click', simulateScan);
   document.addEventListener('keydown', (e) => {
     if (e.key === 'q' || e.key === 'Q') simulateScan();
   });
 
-  // ---------- Init ----------
+  // Go
   showCameraView();
 })();
