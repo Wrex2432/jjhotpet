@@ -1,16 +1,224 @@
-/* HotPet — Mobile specific tweaks
-   (Relies on base tokens/classes from assets/style.css) */
+/* HotPet — Mobile theme & layout (2025)
+   - Full-page background: default peach radial; scenic path when BG is set
+   - Transparent container; white bottom sheet
+   - Menus/buttons styled to mobile theme
+   - XP text inside the bar (right end)
+*/
 
-.home-actions { display: grid; gap: 10px; }
+/* ---------- Theme tokens ---------- */
+:root{
+  /* Brand/dark surface used by menus/buttons */
+  --ui-surface: #10161d;
+  --ui-surface-2: #0b1219;
+  --ui-border: rgba(255,255,255,.08);
+  --ui-text: #e8eef6;
+  --ui-muted: #8ea0b7;
 
-#qrOnly #qr canvas, #qrOnly #qr img {
-  width: min(80%, 360px);
+  /* Accent */
+  --accent-red: #e55833;
+  --accent-red-ink: #a24b1a;
+  --accent-red-soft: #fff3e2;
+  --accent-red-border: #ffd1a2;
+
+  /* XP bar */
+  --xp-track: #e9edf3;
+  --xp-fill-a: #ffcf5a;
+  --xp-fill-b: #ff9d3d;
+
+  /* Peach radial (default background) */
+  --peach-1: #ffe0c8;
+  --peach-2: #ffd1b6;
+  --peach-3: #ffc5a6;
 }
 
-/* Slightly tighter container on very small screens */
+/* ---------- Full page background ---------- */
+html, body { min-height: 100%; }
+body {
+  /* DEFAULT: peach radial */
+  background:
+    radial-gradient(120% 100% at 50% 20%, var(--peach-1) 0%, var(--peach-2) 48%, var(--peach-3) 100%);
+  background-color: var(--peach-3);
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: cover;
+}
+
+/* When scenic background is active (JS sets data-bg="scenic") */
+body[data-bg="scenic"]{
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: cover; /* image is provided via body.style.backgroundImage in JS */
+}
+
+/* ---------- App chrome: transparent container so bg fills edge-to-edge ---------- */
+.wrapper { padding: clamp(8px, 2vw, 24px); }
+.container {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Header tweaks to match theme */
+.header {
+  background: linear-gradient(180deg, rgba(255,255,255,.04), transparent);
+  border: 1px solid var(--ui-border);
+  border-radius: 14px;
+}
+.header__title { color: var(--ui-text); }
+.header__meta { color: var(--ui-muted); }
+
+/* Main spacing */
+.main { padding: 12px; }
+
+/* Base card keeps soft surface for home cards/lists */
+.card {
+  background: rgba(0,0,0,.18);
+  border: 1px solid var(--ui-border);
+  border-radius: 16px;
+}
+
+/* ---------- Home actions: themed buttons ---------- */
+.home-actions { display: grid; gap: 10px; }
+.btn {
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  border: 1px solid var(--ui-border);
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-weight: 700;
+  transition: transform .12s ease, background .2s ease, border-color .2s ease;
+}
+.btn:hover { transform: translateY(-1px); border-color: rgba(255,255,255,.16); }
+.btn:active { transform: translateY(0); }
+.btn--primary {
+  background: linear-gradient(90deg, #1b2634, #243347);
+  color: #fff;
+  border-color: rgba(255,255,255,.12);
+}
+.btn--ghost {
+  background: transparent;
+  color: var(--ui-muted);
+  border-style: dashed;
+}
+
+/* ---------- Hero (transparent; sprite sits over page bg) ---------- */
+.mobile-hero {
+  position: relative;
+  height: clamp(320px, 56vh, 600px);
+  overflow: hidden;
+  background: transparent;
+}
+
+/* Handle badge with status dot (color changes by bg mode) */
+.handle-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 6px 10px 6px 22px; /* space for dot */
+  border-radius: 999px;
+  background: rgba(0,0,0,.50);
+  color: #e8eef6;
+  border: 1px solid rgba(255,255,255,.18);
+  font-size: 13px;
+}
+.handle-badge::before{
+  content: "";
+  position: absolute; left: 8px; top: 50%;
+  width: 8px; height: 8px; border-radius: 50%;
+  transform: translateY(-50%);
+  background: #b6bdc6; /* default gray dot on peach */
+}
+body[data-bg="scenic"] .handle-badge::before { background: #44d07d; } /* green dot on scenic */
+
+/* Centered sprite (will be replaced by QR image) */
+.sprite {
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  transform: translate(-50%, -50%);
+  width: min(68vw, 360px);
+  height: auto;
+}
+
+/* ---------- Bottom sheet (white) ---------- */
+.sheet {
+  position: relative;
+  margin-top: -14px;
+  background: #ffffff;
+  color: #1a1d22;
+  border: 1px solid rgba(0,0,0,.06);
+  border-top-left-radius: 18px;
+  border-top-right-radius: 18px;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.12);
+}
+
+/* Title / subtitle */
+.sheet__title {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--accent-red);
+}
+.sheet__subtitle {
+  margin-top: 4px;
+  color: #7b8696;
+  font-weight: 600;
+}
+
+/* Level chip */
+.sheet__row { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 10px;
+  background: var(--accent-red-soft);
+  color: var(--accent-red-ink);
+  border: 1px solid var(--accent-red-border);
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+/* ---------- XP bar with label inside (right) ---------- */
+.xp { margin-top: 10px; }
+.xp__bar {
+  position: relative;
+  height: 10px;
+  background: var(--xp-track);
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid rgba(0,0,0,.06);
+}
+.xp__bar > i {
+  position: absolute; inset: 0 auto 0 0;
+  width: 0%;
+  background: linear-gradient(90deg, var(--xp-fill-a), var(--xp-fill-b));
+}
+.xp__label {
+  position: absolute;
+  right: 8px; top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  color: #8a94a5;
+  pointer-events: none;
+}
+
+/* Quip */
+.sheet__quip { margin-top: 10px; color: #657084; font-size: 13px; }
+
+/* Sheet controls */
+.sheet__controls { margin-top: 12px; }
+
+/* Lists (pet/backgrounds) */
+.list { display: grid; gap: 10px; }
+.list__item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px; border-radius: 12px;
+  background: rgba(0,0,0,.20);
+  border: 1px solid var(--ui-border);
+}
+.list__thumb { width: 56px; height: 56px; border-radius: 8px; object-fit: cover; }
+
+/* Small screens */
 @media (max-width: 380px){
   .container { border-radius: 10px; }
 }
-
-/* Slightly larger buttons for thumb comfort */
-.btn { padding: 12px 16px; }

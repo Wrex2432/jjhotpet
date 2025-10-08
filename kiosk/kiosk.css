@@ -1,26 +1,142 @@
-/* HotPet — Kiosk specific tweaks
-   (Relies on base tokens/classes from assets/style.css) */
+/* HotPet — Kiosk theme (2025)
+   - Full-page scenic background by default (set via JS on <body>)
+   - Transparent container, mobile-like character card
+   - XP label inside bar (right end)
+*/
 
+:root{
+  --accent-red: #e55833;
+  --accent-red-ink: #a24b1a;
+  --accent-red-soft: #fff3e2;
+  --accent-red-border: #ffd1a2;
+
+  --ink: #1a1d22;
+  --ink-muted: #7b8696;
+  --ink-soft: #657084;
+
+  --xp-track: #e9edf3;
+  --xp-fill-a: #ffcf5a;
+  --xp-fill-b: #ff9d3d;
+}
+
+/* Full-page scenic background is applied by JS:
+   body.style.backgroundImage = url('../assets/backgrounds/BG_1024x1536.png');
+   Keep cover/center here. */
+html, body { min-height: 100%; }
+body {
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: cover;
+}
+
+/* Transparent chrome so background is edge-to-edge */
+.wrapper { padding: clamp(8px, 2vw, 24px); }
+.container {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Header styling */
+.header {
+  background: linear-gradient(180deg, rgba(255,255,255,.04), transparent);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px;
+}
 .kiosk__status {
   padding: 4px 8px;
   border: 1px solid rgba(255,255,255,.12);
   border-radius: 999px;
 }
 
-/* Make the stage as big as possible within kiosk fullscreen container */
-.container--kiosk .stage {
-  aspect-ratio: 16/9;
+/* CAMERA STAGE */
+.container--kiosk .stage { aspect-ratio: 16/9; }
+.container--kiosk .btn { padding: 12px 16px; font-size: 16px; }
+
+/* CHARACTER VIEW — HERO */
+.k-hero {
+  position: relative;
+  height: clamp(420px, 60vh, 720px);
+  background: transparent; /* let page bg show through */
+  border-radius: 16px;
+}
+.handle-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  padding: 6px 10px 6px 22px; /* room for dot */
+  border-radius: 999px;
+  background: rgba(0,0,0,.50);
+  color: #e8eef6;
+  border: 1px solid rgba(255,255,255,.18);
+  font-size: 14px;
+}
+.handle-badge::before{
+  content: "";
+  position: absolute; left: 8px; top: 50%;
+  width: 8px; height: 8px; border-radius: 50%;
+  transform: translateY(-50%);
+  background: #44d07d; /* kiosk default scenic -> green dot */
+}
+.sprite {
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  transform: translate(-50%, -50%);
+  width: min(48vw, 520px);
+  height: auto;
 }
 
-/* On very tall screens, give main some breathing room but keep full-bleed feel */
-@media (min-height: 800px){
-  .container--kiosk .main {
-    padding: 24px;
-  }
+/* CHARACTER VIEW — SHEET */
+.sheet {
+  position: relative;
+  margin-top: -14px;
+  background: #ffffff;
+  color: var(--ink);
+  border: 1px solid rgba(0,0,0,.06);
+  border-top-left-radius: 18px;
+  border-top-right-radius: 18px;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.12);
+}
+.sheet__title {
+  font-size: clamp(20px, 2.2vw, 26px);
+  font-weight: 800;
+  color: var(--accent-red);
+}
+.sheet__subtitle { margin-top: 4px; color: var(--ink-muted); font-weight: 600; }
+.sheet__row { display:flex; align-items:center; justify-content:space-between; margin-top:12px; }
+.chip {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:8px 12px;
+  background: var(--accent-red-soft);
+  color: var(--accent-red-ink);
+  border: 1px solid var(--accent-red-border);
+  border-radius:999px; font-weight:700;
 }
 
-/* Slightly larger buttons for kiosk touch targets */
-.container--kiosk .btn {
-  padding: 12px 16px;
-  font-size: 16px;
+/* XP with label inside (right) */
+.xp { margin-top: 10px; }
+.xp__bar {
+  position: relative;
+  height: 12px;
+  background: var(--xp-track);
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid rgba(0,0,0,.06);
 }
+.xp__bar > i {
+  position: absolute; inset: 0 auto 0 0;
+  width: 0%;
+  background: linear-gradient(90deg, var(--xp-fill-a), var(--xp-fill-b));
+}
+.xp__label {
+  position: absolute;
+  right: 10px; top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px; color: #8a94a5; pointer-events: none;
+}
+
+.sheet__quip { margin-top: 10px; color: var(--ink-soft); font-size: 14px; }
+.sheet__controls { margin-top: 12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }

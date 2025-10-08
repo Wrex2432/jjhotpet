@@ -7,8 +7,9 @@
 
   <!-- Shared base styles -->
   <link rel="stylesheet" href="../assets/style.css"/>
-  <!-- Kiosk-specific tweaks -->
+  <!-- Kiosk-specific styles -->
   <link rel="stylesheet" href="./kiosk.css"/>
+  <link rel="icon" href="../assets/favicon.ico"/>
 </head>
 <body>
   <div class="wrapper">
@@ -31,7 +32,6 @@
                 <span class="badge">Point a QR code to the camera</span>
               </div>
             </div>
-
             <div class="controls">
               <button class="btn" id="btnToggleCam">Toggle camera</button>
               <button class="btn btn--ghost" id="btnSimulate">Simulate scan</button>
@@ -39,34 +39,36 @@
           </div>
         </section>
 
-        <!-- CHARACTER VIEW (shown after successful scan) -->
+        <!-- CHARACTER VIEW (after successful scan) -->
         <section class="view" id="view-character">
-          <div class="row">
-            <div class="grid-2">
-              <div class="card pet__card center">
-                <img id="petImage" class="pet__image" alt="Pet"/>
-                <div class="stat">
-                  <strong id="petName"></strong>
-                  <span class="muted">by</span>
-                  <span id="ownerName" class="muted"></span>
-                </div>
-                <div class="stat small">
-                  Discount Level: <strong id="discountLevel"></strong>
-                </div>
-              </div>
+          <!-- Hero (transparent; background is set on <body>) -->
+          <div class="k-hero card">
+            <div class="handle-badge" id="handleBadge">@someone</div>
+            <img id="petImage" class="sprite" alt="Pet"/>
+          </div>
 
-              <div class="card">
-                <div class="row">
-                  <h2>Actions</h2>
-                  <div class="controls">
-                    <button class="btn btn--primary" id="btnReset">Reset (show camera)</button>
-                    <button class="btn" id="btnExtend">Extend view +10s</button>
-                  </div>
-                  <p class="muted small">
-                    Auto-reset in <span id="countdown">—</span>s.
-                  </p>
-                </div>
+          <!-- Bottom sheet (mirrors mobile) -->
+          <div class="sheet card">
+            <h2 class="sheet__title" id="petName">PetName</h2>
+            <p class="sheet__subtitle" id="petType">Pet Type</p>
+
+            <div class="sheet__row">
+              <span class="chip" id="levelChip">Lv. 0</span>
+            </div>
+
+            <div class="xp">
+              <div class="xp__bar" aria-label="Progress toward next level">
+                <i id="xpFill" style="width:0%"></i>
+                <span class="xp__label" id="xpLabel">0 / 0</span>
               </div>
+            </div>
+
+            <p class="sheet__quip" id="petQuip"></p>
+
+            <div class="controls sheet__controls">
+              <button class="btn btn--primary" id="btnReset">Reset (show camera)</button>
+              <button class="btn" id="btnExtend">Extend view +10s</button>
+              <span class="small muted">Auto-reset in <strong id="countdown">—</strong>s</span>
             </div>
           </div>
         </section>

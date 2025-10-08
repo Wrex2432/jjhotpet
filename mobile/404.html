@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <title>HotPet — Not Found</title>
   <link rel="stylesheet" href="../assets/style.css"/>
-  <link rel="icon" href="../assets/favicon.ico"/>
   <style>
     .nf { display:grid; place-items:center; min-height:100dvh; padding:20px; }
     .nf__card { width:min(100%, 560px); }
@@ -20,7 +19,7 @@
       </header>
       <main class="main">
         <section class="card center">
-          <p class="muted">Taking you back to the mobile app…</p>
+          <p class="muted">Redirecting to the mobile app…</p>
           <div class="controls" style="justify-content:center;margin-top:12px;">
             <a class="btn btn--primary" href="./">Go to Mobile</a>
           </div>
@@ -30,13 +29,20 @@
   </div>
 
   <script>
-    // SPA-friendly redirect: keep path for deep links like /mobile/demopet1
-    (function(){
-      var path = location.pathname.replace(/.*\/mobile\/?/, '');
-      // If there is a deep path (e.g., demopet2), send it back as part of the URL.
-      var to = './index.html' + (path ? '/' + path : '');
-      // Use replace so back button doesn't loop here
-      setTimeout(function(){ location.replace(to); }, 100);
+    (function () {
+      // Extract demopetN from the path if present (e.g., /mobile/demopet3 or /mobile/foo/demopet6)
+      var path = (location.pathname || '').toLowerCase();
+      var m = path.match(/demopet(\d+)/);
+      var target = './index.html' + (m ? ('?demo=' + m[1]) : '');
+
+      // Also support /mobile/?demo=2 if provider serves 404 for query routes
+      var q = new URLSearchParams(location.search.toLowerCase());
+      if (!m && q.get('demo')) {
+        target = './index.html?demo=' + q.get('demo');
+      }
+
+      // Replace so history doesn't get cluttered
+      location.replace(target);
     })();
   </script>
 </body>

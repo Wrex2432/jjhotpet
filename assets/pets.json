@@ -1,44 +1,62 @@
 [
   {
     "UserName": "Iza",
-    "PetName": "Mochi",
-    "PetSpriteSrc": "https://api.dicebear.com/9.x/pixel-art/png?seed=Mochi&size=512",
+    "PetName": "Chub Shrimp",
+    "PetType": "Chief Beef",
+    "PetSpriteSrc": "../assets/character/Chub1.png",
     "DiscountLevel": 3,
-    "Coins": 1200
+    "PointsTotal": 1200,
+    "MaxPointsNeedForNextLevel": 2000,
+    "Quips": "Smokin’ sizzle unlocked! More dips, more drip."
   },
   {
     "UserName": "Liter",
-    "PetName": "Bolt",
-    "PetSpriteSrc": "https://api.dicebear.com/9.x/pixel-art/png?seed=Bolt&size=512",
+    "PetName": "Fit Shrimp",
+    "PetType": "Chief Beef",
+    "PetSpriteSrc": "../assets/character/Chub2.png",
     "DiscountLevel": 1,
-    "Coins": 340
+    "PointsTotal": 340,
+    "MaxPointsNeedForNextLevel": 1000,
+    "Quips": "Not much flavor yet… flames on to spice it up!"
   },
   {
     "UserName": "Mik",
-    "PetName": "Nori",
-    "PetSpriteSrc": "https://api.dicebear.com/9.x/pixel-art/png?seed=Nori&size=512",
+    "PetName": "Chonk Shrimp",
+    "PetType": "Chief Beef",
+    "PetSpriteSrc": "../assets/character/Chub3.png",
     "DiscountLevel": 5,
-    "Coins": 5020
+    "PointsTotal": 5020,
+    "MaxPointsNeedForNextLevel": 6000,
+    "Quips": "Flame chef! Serving main food energy. Hotshot in—upgrade out!"
   },
   {
     "UserName": "Jay",
     "PetName": "Pip",
+    "PetType": "Lobstew",
     "PetSpriteSrc": "https://api.dicebear.com/9.x/pixel-art/png?seed=Pip&size=512",
     "DiscountLevel": 0,
-    "Coins": 75
+    "PointsTotal": 75,
+    "MaxPointsNeedForNextLevel": 300,
+    "Quips": "Mmm… looking bland? Boil your way to a spicy level-up!"
   },
   {
     "UserName": "Neja",
     "PetName": "Kumo",
+    "PetType": "Lobstew",
     "PetSpriteSrc": "https://api.dicebear.com/9.x/pixel-art/png?seed=Kumo&size=512",
     "DiscountLevel": 2,
-    "Coins": 890
+    "PointsTotal": 890,
+    "MaxPointsNeedForNextLevel": 1500,
+    "Quips": "Fresh background served hot! Craving more upgrades? Keep dipping."
   },
   {
     "UserName": "Sai",
     "PetName": "Zest",
+    "PetType": "Lobstew",
     "PetSpriteSrc": "https://api.dicebear.com/9.x/pixel-art/png?seed=Zest&size=512",
     "DiscountLevel": 4,
-    "Coins": 2715
+    "PointsTotal": 2715,
+    "MaxPointsNeedForNextLevel": 3200,
+    "Quips": "Drip status: Steaming! Turn up the heat to stay saucy!"
   }
 ]

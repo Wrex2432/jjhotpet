@@ -7,17 +7,17 @@
 
   <!-- Shared base styles -->
   <link rel="stylesheet" href="../assets/style.css"/>
-  <!-- Mobile-specific tweaks -->
+  <!-- Mobile-specific styles -->
   <link rel="stylesheet" href="./mobile.css"/>
   <link rel="icon" href="../assets/favicon.ico"/>
 </head>
 <body>
   <div class="wrapper">
     <div class="container" id="app">
-      <header class="header">
+      <!-- <header class="header">
         <h1 class="header__title">HotPet — Mobile</h1>
         <div class="header__meta small muted"><span id="modeNote">Home</span></div>
-      </header>
+      </header> -->
 
       <main class="main">
         <!-- HOME -->
@@ -31,29 +31,39 @@
           </div>
         </section>
 
-        <!-- CURRENT PET (QR hidden by default; toggle replaces pet with only QR) -->
+        <!-- CURRENT PET -->
         <section class="view" id="view-current">
-          <div class="row">
-            <div class="card pet__card center" id="petCard">
-              <img id="curPetImg" class="pet__image" alt="Pet"/>
-              <div class="stat"><strong id="curPetName"></strong>
-                <span class="muted">owned by</span> <span id="curOwner" class="muted"></span></div>
-              <div class="stat small">Discount Level: <strong id="curDisc"></strong></div>
+          <!-- Hero area: background (peach radial by default) + centered sprite + handle -->
+          <div class="mobile-hero card" id="mobileHero">
+            <div class="handle-badge" id="handleBadge">@someone</div>
+            <img id="curPetImg" class="sprite" alt="Pet"/>
+          </div>
 
-              <div class="controls">
-                <button class="btn" id="btnToggleQR">Show QR</button>
-                <button class="btn btn--ghost" id="btnBackHome1">Back</button>
+          <!-- Bottom sheet -->
+          <div class="sheet card" id="petCard">
+            <span id="pointsTotal" class="points-total">0 pts</span>
+
+            <h2 class="sheet__title" id="curPetName">PetName</h2>
+            <p class="sheet__subtitle" id="curPetType">Pet Type</p>
+
+            <div class="sheet__row">
+              <span class="chip" id="levelChip">Lv. 0</span>
+            </div>
+
+            <div class="xp">
+              <div class="xp__bar" aria-label="Progress toward next level">
+                <i id="xpFill" style="width:0%"></i>
+              </div>
+              <div class="xp__meta">
+                <span class="xp__label" id="xpLabel">0 / 0</span>
               </div>
             </div>
 
-            <!-- When QR is shown, we hide #petCard and show only this block -->
-            <div class="card qr center hidden" id="qrOnly">
-              <div id="qr"></div>
-              <div class="controls" style="justify-content:center;margin-top:12px;">
-                <button class="btn" id="btnHideQR">Hide QR</button>
-                <button class="btn btn--ghost" id="btnBackHome1b">Back</button>
-              </div>
-              <p class="small muted" style="margin-top:6px;">Scan to send this pet to the kiosk</p>
+            <p class="sheet__quip" id="curQuip"></p>
+
+            <div class="controls sheet__controls">
+              <button class="btn" id="btnToggleQR">Show QR</button>
+              <button class="btn btn--ghost" id="btnBackHome1">Back</button>
             </div>
           </div>
         </section>
