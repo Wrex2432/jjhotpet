@@ -1,48 +1,35 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-  <title>HotPet — Not Found</title>
-  <link rel="stylesheet" href="../assets/style.css"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Redirecting…</title>
+  <noscript>
+    <meta http-equiv="refresh" content="0; url=./index.html">
+  </noscript>
   <style>
-    .nf { display:grid; place-items:center; min-height:100dvh; padding:20px; }
-    .nf__card { width:min(100%, 560px); }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin: 2rem; }
   </style>
 </head>
 <body>
-  <div class="nf">
-    <div class="container nf__card">
-      <header class="header">
-        <h1 class="header__title">Page not found</h1>
-        <div class="header__meta small muted">HotPet — Mobile</div>
-      </header>
-      <main class="main">
-        <section class="card center">
-          <p class="muted">Redirecting to the mobile app…</p>
-          <div class="controls" style="justify-content:center;margin-top:12px;">
-            <a class="btn btn--primary" href="./">Go to Mobile</a>
-          </div>
-        </section>
-      </main>
-    </div>
-  </div>
-
+  Redirecting…
   <script>
     (function () {
-      // Extract demopetN from the path if present (e.g., /mobile/demopet3 or /mobile/foo/demopet6)
-      var path = (location.pathname || '').toLowerCase();
-      var m = path.match(/demopet(\d+)/);
-      var target = './index.html' + (m ? ('?demo=' + m[1]) : '');
+      // Example paths handled:
+      // /mobile/demopet0, /mobile/demopet12, /mobile/foo/demopet3, etc.
+      var m = location.pathname.match(/demopet(\d+)/i);
 
-      // Also support /mobile/?demo=2 if provider serves 404 for query routes
-      var q = new URLSearchParams(location.search.toLowerCase());
-      if (!m && q.get('demo')) {
-        target = './index.html?demo=' + q.get('demo');
+      var params = new URLSearchParams(location.search);
+      if (m && m[1] !== undefined) {
+        // Use ?i=N so the app renders that specific pet and opens Pet view
+        params.set('i', String(parseInt(m[1], 10) || 0));
       }
 
-      // Replace so history doesn't get cluttered
-      location.replace(target);
+      var query = params.toString();
+      var dest = './index.html' + (query ? ('?' + query) : '') + location.hash;
+
+      // Replace history so back button won’t bounce through 404
+      location.replace(dest);
     })();
   </script>
 </body>

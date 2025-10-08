@@ -1,97 +1,106 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <title>HotPet — Mobile</title>
-
-  <!-- Shared base styles -->
   <link rel="stylesheet" href="../assets/style.css"/>
-  <!-- Mobile-specific styles -->
   <link rel="stylesheet" href="./mobile.css"/>
   <link rel="icon" href="../assets/favicon.ico"/>
 </head>
-<body>
-  <div class="wrapper">
-    <div class="container" id="app">
-      <!-- <header class="header">
-        <h1 class="header__title">HotPet — Mobile</h1>
-        <div class="header__meta small muted"><span id="modeNote">Home</span></div>
-      </header> -->
-
-      <main class="main">
-        <!-- HOME -->
-        <section class="view is-active" id="view-home">
-          <div class="card">
-            <div class="home-actions">
-              <button class="btn btn--primary" id="btnShowCurrent">Show current pet</button>
-              <button class="btn" id="btnListPets">View list of pets</button>
-              <button class="btn" id="btnBackgrounds">Change background</button>
-            </div>
-          </div>
-        </section>
-
-        <!-- CURRENT PET -->
-        <section class="view" id="view-current">
-          <!-- Hero area: background (peach radial by default) + centered sprite + handle -->
-          <div class="mobile-hero card" id="mobileHero">
-            <div class="handle-badge" id="handleBadge">@someone</div>
-            <img id="curPetImg" class="sprite" alt="Pet"/>
-          </div>
-
-          <!-- Bottom sheet -->
-          <div class="sheet card" id="petCard">
-            <span id="pointsTotal" class="points-total">0 pts</span>
-
-            <h2 class="sheet__title" id="curPetName">PetName</h2>
-            <p class="sheet__subtitle" id="curPetType">Pet Type</p>
-
-            <div class="sheet__row">
-              <span class="chip" id="levelChip">Lv. 0</span>
-            </div>
-
-            <div class="xp">
-              <div class="xp__bar" aria-label="Progress toward next level">
-                <i id="xpFill" style="width:0%"></i>
-              </div>
-              <div class="xp__meta">
-                <span class="xp__label" id="xpLabel">0 / 0</span>
-              </div>
-            </div>
-
-            <p class="sheet__quip" id="curQuip"></p>
-
-            <div class="controls sheet__controls">
-              <button class="btn" id="btnToggleQR">Show QR</button>
-              <button class="btn btn--ghost" id="btnBackHome1">Back</button>
-            </div>
-          </div>
-        </section>
-
-        <!-- PET LIST -->
-        <section class="view" id="view-list">
-          <div class="card list" id="petList"></div>
-          <div class="controls">
-            <button class="btn btn--ghost" id="btnBackHome2">Back</button>
-          </div>
-        </section>
-
-        <!-- BACKGROUNDS -->
-        <section class="view" id="view-backgrounds">
-          <div class="card list" id="bgList"></div>
-          <div class="controls">
-            <button class="btn btn--ghost" id="btnBackHome3">Back</button>
-          </div>
-        </section>
-      </main>
+<body class="mobile-body">
+  <!-- Transparent user pill (JS shows only in Pet view) -->
+  <header class="m-header">
+    <div class="user-pill">
+      <span class="dot" aria-hidden="true"></span>
+      <span id="username">@someone</span>
     </div>
-  </div>
+  </header>
 
-  <!-- Shared helpers -->
+  <!-- HOME (mode picker) -->
+  <section id="viewHome" class="view view--home">
+    <div class="home-buttons">
+      <button id="btnCurrentPet" class="btn btn--home">Current Pet</button>
+      <button id="btnListPets" class="btn btn--home">List of Pets</button>
+      <button id="btnBackgrounds" class="btn btn--home">Backgrounds</button>
+    </div>
+  </section>
+
+  <!-- CURRENT PET -->
+  <section id="viewCurrentPet" class="view view--pet hidden" aria-label="Current pet">
+    <main class="m-canvas">
+      <img id="petSprite" class="pet-sprite" alt="Pet"/>
+      <!-- Centered QR overlay -->
+      <div id="qrHolder" class="qr-holder hidden" aria-live="polite"></div>
+    </main>
+
+    <!-- White bottom sheet -->
+    <aside class="pet-card" role="region" aria-label="Pet details">
+      <!-- QR toggle on the sheet (upper-left) -->
+      <button id="btnToggleQR" class="qr-toggle" aria-pressed="false" title="Show QR"></button>
+
+      <div class="pet-meta">
+        <h1 id="petName" class="pet-name">PetName</h1>
+        <p id="petType" class="pet-title">Pet Type</p>
+      </div>
+
+      <div class="level-row">
+        <span class="lvl-badge">Lv. <span id="levelNum">0</span></span>
+      </div>
+
+      <div class="xp-wrap" aria-label="Experience">
+        <div class="xp-bar">
+          <div id="xpFill" class="xp-fill" style="width:0%"></div>
+        </div>
+        <div class="xp-row">
+          <span class="xp-spacer"></span>
+          <span class="xp-text"><span id="xpNow">0</span>/<span id="xpMax">100</span>pts</span>
+        </div>
+      </div>
+
+      <hr class="quip-hr"/>
+      <p id="petDesc" class="pet-desc">Hmmm… looking bland? Boil your way to a spicy level-up!</p>
+
+      <div class="sheet-actions">
+        <button id="btnBackHome1" class="btn btn--outline">Back</button>
+      </div>
+    </aside>
+  </section>
+
+  <!-- LIST OF PETS -->
+  <section id="viewList" class="view hidden" aria-label="Pets list">
+    <div class="panel">
+      <h2 class="panel-title">Select a Pet</h2>
+      <div id="petsGrid" class="pets-grid"></div>
+      <div class="panel-actions">
+        <button id="btnBackHome2" class="btn btn--outline">Back</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- BACKGROUNDS -->
+  <section id="viewBackgrounds" class="view hidden" aria-label="Backgrounds">
+    <div class="panel">
+      <h2 class="panel-title">Choose a Background</h2>
+      <div class="bg-grid">
+        <button class="bg-card" data-bg="portrait">
+          <img src="../assets/backgrounds/BG_1024x1536.png" alt="Portrait BG"/>
+          <span>Portrait</span>
+        </button>
+        <button class="bg-card" data-bg="landscape">
+          <img src="../assets/backgrounds/BG_1536x1024.png" alt="Landscape BG"/>
+          <span>Landscape</span>
+        </button>
+      </div>
+      <div class="panel-actions">
+        <button id="btnBackHome3" class="btn btn--outline">Back</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- libs -->
   <script src="../assets/main.js"></script>
-  <!-- QR generator -->
-  <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
-  <!-- Mobile logic -->
+  <script src="https://unpkg.com/qrcodejs@1.0.0/qrcode.min.js"></script>
   <script src="./mobileScript.js"></script>
 </body>
 </html>

@@ -1,40 +1,27 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1, viewport-fit=cover"
-  />
-  <title>HotPet</title>
-
-  <!-- Core styles -->
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HotPet V2</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/style.css" />
-
-  <!-- (Optional) Favicon -->
-  <link rel="icon" href="assets/favicon.ico" />
+  <style>
+    /* tiny layout helper just for this page */
+    .screen-center { min-height: 100svh; display: grid; place-items: center; }
+    .btn-stack { display: grid; gap: 1rem; width: min(420px, 90%); }
+    @media (min-width: 520px) {
+      .btn-stack { grid-template-columns: 1fr 1fr; }
+    }
+    .btn { padding: 1rem 1.25rem; font-size: 1.125rem; }
+  </style>
 </head>
 <body>
-  <div class="wrapper">
-    <div class="container">
-      <header class="header">
-        <h1 class="header__title">HotPet — Choose Mode</h1>
-        <div class="header__meta small muted">v1</div>
-      </header>
-
-      <main class="main">
-        <section class="card center">
-          <p class="muted">Pick where you’re running this app</p>
-          <div class="controls" style="justify-content:center;margin-top:12px;">
-            <a class="btn btn--primary" href="./kiosk/">Kiosk</a>
-            <a class="btn" href="./mobile/">Mobile</a>
-          </div>
-        </section>
-      </main>
+  <main class="screen-center">
+    <div class="btn-stack">
+      <a class="btn" href="/kiosk/">Kiosk</a>
+      <a class="btn" href="/mobile/">Mobile</a>
     </div>
-  </div>
-
-  <!-- Shared helpers (not strictly required on this page, but harmless to include) -->
-  <script src="assets/main.js"></script>
+  </main>
 </body>
 </html>

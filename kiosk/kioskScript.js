@@ -1,182 +1,245 @@
-/* HotPet — Kiosk logic (2025)
-   - Default: Camera view ON
-   - On QR scan: Character view ON (camera OFF), countdown to reset
-   - Page background: scenic BG_1024x1536 by default (full page)
-   - Character card mirrors Mobile (no QR toggle)
-   - Accepts compact payload {u,n,t,s,d,p,m,q} or full keys
-   - Supports tiny {i:index} -> looks up assets/pets.json
+/* HotPet — Kiosk (cam → loading → pet; simulate via hidden button or 'Q')
+   - Uses the SAME IDs as the mobile pet block:
+     #petSprite, #petName, #petType, #levelNum, #xpFill, #xpNow, #xpMax, #petDesc
+   - Accepts QR payloads:
+       • Full keys: UserName, PetName, PetType, PetSpriteSrc, DiscountLevel, PointsTotal, MaxPointsNeedForNextLevel, Quips
+       • Compact:   {u,n,t,s,d,p,m,q}
+       • Index:     {i} or "i=3" or "3" → resolves from ../assets/pets.json
 */
+
 (function () {
-  const {
-    $, show, hide, swap, startCamera, stopCamera, fetchJSON
-  } = window.HotPet;
+  // ---------- Config ----------
+  const LOADING_SECONDS = 0.2;   // spinner duration
+  const PET_SECONDS     = 25;    // time to show pet view before auto-reset
+  const PETS_PATH       = '../assets/pets.json';
 
-  // ----- Page background (scenic by default) -----
-  (function setDefaultBg(){
-    document.body.style.backgroundImage = 'url("../assets/backgrounds/BG_1024x1536.png")';
-    document.body.style.backgroundRepeat = 'no-repeat';
-    document.body.style.backgroundPosition = 'center center';
-    document.body.style.backgroundSize = 'cover';
-  })();
+  // ---------- DOM ----------
+  const $ = (s) => document.querySelector(s);
+  const usernameEl = document.querySelector('#username');
 
-  // ----- Elements -----
-  const viewCam   = $('#view-camera');
-  const viewChar  = $('#view-character');
+  // Views
+  const viewCam  = $('#view-camera');
+  const viewLoad = $('#view-loading');
+  const viewPet  = $('#view-pet');
 
-  const video     = $('#video');
-  const canvas    = $('#canvas');
-  const statusEl  = $('#kioskStatus');
-  const cdEl      = $('#countdown');
+  // Camera
+  const video  = $('#video');
+  const canvas = $('#canvas');
 
-  // Character UI
-  const handleBadge = $('#handleBadge');
-  const imgEl     = $('#petImage');
-  const nameEl    = $('#petName');
-  const typeEl    = $('#petType');
-  const levelEl   = $('#levelChip');
-  const xpFill    = $('#xpFill');
-  const xpLabel   = $('#xpLabel');
-  const quipEl    = $('#petQuip');
+  // Pet view (MUST match mobile IDs)
+  const imgEl    = $('#petSprite');
+  const nameEl   = $('#petName');
+  const typeEl   = $('#petType');
+  const levelEl  = $('#levelNum');
+  const xpFill   = $('#xpFill');
+  const xpNowEl  = $('#xpNow');
+  const xpMaxEl  = $('#xpMax');
+  const quipEl   = $('#petDesc');
 
-  // Controls
-  const btnToggle = $('#btnToggleCam');
-  const btnSim    = $('#btnSimulate');
-  const btnReset  = $('#btnReset');
-  const btnExtend = $('#btnExtend');
+  // Simulate button (invisible)
+  const btnSim   = $('#btnSimulate');
 
-  // ----- State -----
-  const DEFAULT_SHOW_SECONDS = 20;
-  let remaining   = DEFAULT_SHOW_SECONDS;
-  let countdownId = null;
+  // ---------- State ----------
+  let stream = null;
+  let rafId  = null;
+  let backTimer = null;
 
-  let stream      = null;
-  let facingMode  = 'environment';
-  let rafId       = null;
+  // ---------- Small utils ----------
+  const show = (el) => { el?.classList.remove('hidden'); el?.classList.add('is-active'); };
+  const hide = (el) => { el?.classList.add('hidden'); el?.classList.remove('is-active'); };
 
-  let currentIndex = null; // set if QR sends {i:index}
 
-  // ----- Helpers -----
-  function setStatus(text){ statusEl.textContent = text; }
 
-  function startCountdown() {
-    clearInterval(countdownId);
-    remaining = DEFAULT_SHOW_SECONDS;
-    cdEl.textContent = remaining;
-    countdownId = setInterval(() => {
-      remaining--;
-      cdEl.textContent = remaining;
-      if (remaining <= 0) { resetToCamera(); }
-    }, 1000);
+  function toInt(n, def=0){ n = Number(n); return Number.isFinite(n) ? n|0 : def; }
+
+  // ---------- Camera ----------
+  async function startCamera() {
+    try {
+      const s = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: { facingMode: 'environment' }
+      });
+      stream = s;
+      video.srcObject = s;
+      await video.play();
+      startScanning();
+    } catch (err) {
+      console.error('[kiosk] camera error:', err);
+      alert('QR detection not supported in this browser.');
+    }
+  }
+  function stopCamera() {
+    if (stream) {
+      for (const t of stream.getTracks()) t.stop();
+      stream = null;
+    }
+    if (video) video.srcObject = null;
   }
 
-  function extendCountdown(sec = 10) {
-    remaining += sec;
-    cdEl.textContent = remaining;
+  // ---------- Views ----------
+  function showCameraView(){
+    stopScanning();
+    hide(viewLoad); hide(viewPet);
+    show(viewCam);
+    startCamera();
   }
+  function showLoading(){
+    stopScanning();
+    hide(viewCam); hide(viewPet);
+    show(viewLoad);
+  }
+  function clearPetTimer() {
+    if (backTimer) { clearTimeout(backTimer); backTimer = null; }
+  }
+  function showPetView(pet){
+    hide(viewCam); hide(viewLoad);
+    renderPet(pet);
+    show(viewPet);
+    clearPetTimer();
+    backTimer = setTimeout(showCameraView, PET_SECONDS * 1000);
+  }
+
+  // ---------- Data ----------
+  async function loadPets() {
+    try {
+      const res = await fetch(PETS_PATH, { cache: 'no-store' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return await res.json();
+    } catch (e) {
+      console.error('[kiosk] pets.json failed, using fallback', e);
+      return [{
+        UserName: 'Iza',
+        PetName: 'Chub Shrimp',
+        PetType: 'Chief Beef',
+        PetSpriteSrc: '../assets/character/Chub1.png',
+        DiscountLevel: 3,
+        PointsTotal: 1200,
+        MaxPointsNeedForNextLevel: 2000,
+        Quips: 'Smokin’ sizzle unlocked! More dips, more drip.'
+      }];
+    }
+  }
+  function normTxt(s){
+  return String(s||'')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g,'')   // strip spaces/punct
+    .trim();
+}
+function fileBase(s){
+  return String(s||'').split('/').pop().toLowerCase();
+}
 
   function normPet(p){
-    // Accepts full keys OR compact QR keys
-    const u = p.UserName ?? p.u ?? p.userName ?? 'Guest';
-    const n = p.PetName  ?? p.n ?? p.petName  ?? 'Pet';
-    const t = p.PetType  ?? p.t ?? p.petType  ?? 'Default';
-    const s = p.PetSpriteSrc ?? p.s ?? p.petSpriteSrc ?? '';
-    const d = Number(p.DiscountLevel ?? p.d ?? p.discountLevel ?? 0);
-    const pt= Number(p.PointsTotal   ?? p.p ?? p.Points ?? p.points ?? 0);
-    const m = Number(p.MaxPointsNeedForNextLevel ?? p.m ?? p.max ?? 100);
-    const q = p.Quips ?? p.q ?? '';
-
-    return { UserName:u, PetName:n, PetType:t, PetSpriteSrc:s, DiscountLevel:d, PointsTotal:pt, MaxPointsNeedForNextLevel:m, Quips:q };
+    return {
+      UserName: p.UserName ?? p.u ?? '',
+      PetName:  p.PetName  ?? p.n ?? '',
+      PetType:  p.PetType  ?? p.t ?? '',
+      PetSpriteSrc: p.PetSpriteSrc ?? p.s ?? '',
+      DiscountLevel: toInt(p.DiscountLevel ?? p.d ?? 0),
+      PointsTotal: toInt(p.PointsTotal ?? p.p ?? 0),
+      MaxPointsNeedForNextLevel: toInt(p.MaxPointsNeedForNextLevel ?? p.m ?? 1000),
+      Quips: p.Quips ?? p.q ?? ''
+    };
   }
+  async function resolvePayload(text){
+    let raw = null;
 
-  function renderCharacter(pet){
-    handleBadge.textContent = '@' + pet.UserName;
-    imgEl.src   = pet.PetSpriteSrc || '';
-    nameEl.textContent = pet.PetName;
-    typeEl.textContent = pet.PetType;
-    levelEl.textContent = 'Lv. ' + pet.DiscountLevel;
+    // JSON? → parse
+    try { raw = JSON.parse(text); } catch {}
 
-    const max = Math.max(1, pet.MaxPointsNeedForNextLevel);
-    const ratio = Math.max(0, Math.min(1, pet.PointsTotal / max));
-    xpFill.style.width = (ratio * 100).toFixed(1) + '%';
-    xpLabel.textContent = `${pet.PointsTotal} / ${max}`;
+    // not JSON? accept "3" or "i=3"
+    if (!raw) {
+      const plain = String(text).trim();
+      const mNum = plain.match(/^\d+$/);
+      const mI   = plain.match(/^[iI]\s*=\s*(\d+)$/);
+      if (mNum) raw = { i: parseInt(mNum[0], 10) };
+      else if (mI) raw = { i: parseInt(mI[1], 10) };
+    }
+    if (!raw) return null;
 
-    quipEl.textContent = pet.Quips || '';
-  }
+    let pet = normPet(raw);
+    const idx = Number.isInteger(raw.i) ? raw.i : null;
 
-async function resolvePayload(text){
-  // Try to parse JSON
-  let raw = null;
-  try { raw = JSON.parse(text); } catch { /* not JSON */ }
+    // If we only have partial data or index → hydrate from dataset
+    // If we only have partial data or index → hydrate from dataset
+if (!pet.PetSpriteSrc || idx !== null) {
+  const list = await loadPets();
+  let match = null;
 
-  // If QR isn't JSON, synthesize something light so UI still renders
-  if (!raw) {
-    const txt = String(text || '');
-    return normPet({
-      UserName: 'Guest',
-      PetName: txt.slice(0, 24) || 'Pet',
-      PetSpriteSrc: '', // we'll try to fill from pets.json below
-      DiscountLevel: 1,
-      PointsTotal: 0,
-      MaxPointsNeedForNextLevel: 100,
-      Quips: ''
-    });
-  }
+  // 1) direct index
+  if (idx !== null && list[idx]) match = list[idx];
 
-  // Normalize fields (accept compact or full keys)
-  let pet = normPet(raw);
+  if (!match && list.length) {
+    const wantName  = normTxt(pet.PetName);
+    const wantUser  = normTxt(pet.UserName);
+    const wantBase  = fileBase(pet.PetSpriteSrc);
 
-  // Try to capture the tiny index if provided
-  const idx = (raw && Number.isInteger(raw.i)) ? raw.i : null;
+    // 2) strong match by (UserName + PetName)
+    match = list.find(x => normTxt(x.UserName) === wantUser && normTxt(x.PetName) === wantName) || null;
 
-  // If sprite is missing, try to resolve from pets.json
-  if (!pet.PetSpriteSrc) {
-    const pets = await fetchJSON('../assets/pets.json', []);
-    let match = null;
-
-    // 1) Index lookup
-    if (idx !== null && pets[idx]) match = pets[idx];
-
-    // 2) User+Name or Name-only match
-    if (!match && pets.length) {
-      match = pets.find(p =>
-        (pet.UserName && p.UserName === pet.UserName && p.PetName === pet.PetName) ||
-        (p.PetName === pet.PetName)
-      );
+    // 3) match by PetName only (normalized)
+    if (!match && wantName) {
+      match = list.find(x => normTxt(x.PetName) === wantName) || null;
     }
 
-    if (match) {
-      const m = normPet(match);
-      pet.PetSpriteSrc = m.PetSpriteSrc || pet.PetSpriteSrc;
-      // Fill any other missing fields from the canonical record
-      if (!pet.PetType) pet.PetType = m.PetType;
-      if (!pet.Quips) pet.Quips = m.Quips;
-      if (!pet.MaxPointsNeedForNextLevel) pet.MaxPointsNeedForNextLevel = m.MaxPointsNeedForNextLevel;
+    // 4) match by sprite filename (basename only)
+    if (!match && wantBase) {
+      match = list.find(x => fileBase(x.PetSpriteSrc) === wantBase) || null;
+    }
+
+    // 5) soft fallback: startsWith on name (lets "chonk" hit "chub" if they share prefix)
+    if (!match && wantName) {
+      match = list.find(x => normTxt(x.PetName).startsWith(wantName) || wantName.startsWith(normTxt(x.PetName))) || null;
     }
   }
 
-  // Normalize relative asset paths so they work from /kiosk/
-  if (pet.PetSpriteSrc && !/^https?:\/\//i.test(pet.PetSpriteSrc)) {
-    // If it already starts with '../', leave as is; otherwise map assets/ -> ../assets/
-    if (!pet.PetSpriteSrc.startsWith('../')) {
-      pet.PetSpriteSrc = pet.PetSpriteSrc.replace(/^(\.\/)?assets\//, '../assets/');
-      // If path is like 'character/Chub1.png', prefix with ../assets/
-      if (!pet.PetSpriteSrc.startsWith('../')) {
-        pet.PetSpriteSrc = '../assets/' + pet.PetSpriteSrc.replace(/^\.?\//, '');
-      }
-    }
+  if (match) {
+    const m = normPet(match);
+    pet = { ...m, ...pet, PetSpriteSrc: pet.PetSpriteSrc || m.PetSpriteSrc };
   }
-
-  return pet;
 }
 
 
-  function stopScanning() {
-    if (rafId) cancelAnimationFrame(rafId);
-    rafId = null;
+    // Make sprite URL absolute-ish relative to kiosk
+    if (pet.PetSpriteSrc && !/^https?:/i.test(pet.PetSpriteSrc)) {
+      if (!pet.PetSpriteSrc.startsWith('../')) {
+        pet.PetSpriteSrc = '../assets/' + pet.PetSpriteSrc.replace(/^\.?\/?assets\//, '');
+      }
+    }
+    return pet;
   }
 
-  function startScanning() {
+  // ---------- Render (IDs match mobile) ----------
+function renderPet(p){
+  try {
+    imgEl.src = p.PetSpriteSrc || '';
+    imgEl.alt = p.PetName || 'Pet';
+
+    // NEW: username pill
+    if (usernameEl) usernameEl.textContent = p.UserName ? `@${p.UserName}` : '@player';
+
+    nameEl.textContent  = p.PetName || '';
+    typeEl.textContent  = p.PetType || '';
+    levelEl.textContent = String(p.DiscountLevel ?? 0);
+
+    const max = Math.max(1, toInt(p.MaxPointsNeedForNextLevel, 1000));
+    const now = Math.max(0, toInt(p.PointsTotal, 0));
+    const pct = Math.min(100, (now / max) * 100);
+    xpFill.style.width = pct.toFixed(1) + '%';
+    xpNowEl.textContent = String(now);
+    xpMaxEl.textContent = String(max);
+
+    quipEl.textContent = p.Quips || '';
+  } catch (e) {
+    console.error('[kiosk] render error', e);
+  }
+}
+
+
+  // ---------- Scanning (jsQR) ----------
+  function startScanning(){
     stopScanning();
+    if (!canvas) return;
     const ctx = canvas.getContext('2d');
 
     const tick = () => {
@@ -184,77 +247,51 @@ async function resolvePayload(text){
         rafId = requestAnimationFrame(tick);
         return;
       }
-
-      canvas.width  = video.videoWidth  || 640;
-      canvas.height = video.videoHeight || 360;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const code = jsQR(imageData.data, canvas.width, canvas.height, { inversionAttempts: 'attemptBoth' });
-
-      if (code && code.data) {
-        handleScanResult(code.data);
-        return; // stop loop
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const code = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: 'dontInvert' });
+      if (code?.data) {
+        onScan(code.data);
+        return;
       }
       rafId = requestAnimationFrame(tick);
     };
-
     rafId = requestAnimationFrame(tick);
   }
+  function stopScanning(){
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = null;
+  }
 
-  async function showCamera() {
+  async function onScan(data){
     try {
-      setStatus('Starting camera…');
-      stream = await startCamera(video, facingMode);
-      setStatus('Scanner ready');
-      startScanning();
+      stopCamera();
+      stopScanning();
+      showLoading();
+      const pet = await resolvePayload(data);
+      if (!pet) throw new Error('Bad QR payload');
+      setTimeout(() => showPetView(pet), LOADING_SECONDS * 1000);
     } catch (e) {
-      console.error(e);
-      setStatus('Camera failed: ' + (e && e.message ? e.message : String(e)));
+      console.error('[kiosk] scan error', e);
+      alert('Could not read QR — try again.');
+      showCameraView();
     }
   }
 
-  async function handleScanResult(text) {
-    const pet = await resolvePayload(text);
-
-    // Switch to character view
-    stopScanning();
-    if (stream) { stopCamera(stream); stream = null; }
-    renderCharacter(pet);
-    swap(viewChar, viewCam);
-    setStatus('QR detected');
-    startCountdown();
+  // ---------- Simulate ----------
+  async function simulateScan(){
+    const sample = JSON.stringify({ i: 0 }); // demo index 0
+    onScan(sample);
   }
 
-  function resetToCamera() {
-    clearInterval(countdownId);
-    stopScanning();
-    if (stream) { stopCamera(stream); stream = null; }
-    hide(viewChar);
-    show(viewCam);
-    showCamera();
-  }
-
-  // ----- Events -----
-  btnToggle.addEventListener('click', async () => {
-    facingMode = (facingMode === 'environment') ? 'user' : 'environment';
-    stopScanning();
-    if (stream) { stopCamera(stream); stream = null; }
-    await showCamera();
+  // ---------- Events ----------
+  btnSim?.addEventListener('click', simulateScan);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'q' || e.key === 'Q') simulateScan();
   });
 
-  btnSim.addEventListener('click', () => {
-    // Demo payload using compact keys
-    const demo = {u:'Iza', n:'Chub Shrimp', t:'Chief Beef', s:'../assets/character/Chub1.png', d:3, p:1200, m:2000, q:'Smokin’ sizzle unlocked! More dips, more drip.'};
-    handleScanResult(JSON.stringify(demo));
-  });
-
-  btnReset.addEventListener('click', resetToCamera);
-  btnExtend.addEventListener('click', () => extendCountdown(10));
-
-  // ----- Boot -----
-  // Default: camera view visible, character view hidden
-  show(viewCam);
-  hide(viewChar);
-  showCamera();
+  // ---------- Init ----------
+  showCameraView();
 })();

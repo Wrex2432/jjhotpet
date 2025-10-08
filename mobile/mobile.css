@@ -1,224 +1,157 @@
-/* HotPet — Mobile theme & layout (2025)
-   - Full-page background: default peach radial; scenic path when BG is set
-   - Transparent container; white bottom sheet
-   - Menus/buttons styled to mobile theme
-   - XP text inside the bar (right end)
-*/
+/* Mobile — flush visuals, centered QR, transparent user pill, XP text below */
 
-/* ---------- Theme tokens ---------- */
 :root{
-  /* Brand/dark surface used by menus/buttons */
-  --ui-surface: #10161d;
-  --ui-surface-2: #0b1219;
-  --ui-border: rgba(255,255,255,.08);
-  --ui-text: #e8eef6;
-  --ui-muted: #8ea0b7;
-
-  /* Accent */
-  --accent-red: #e55833;
-  --accent-red-ink: #a24b1a;
-  --accent-red-soft: #fff3e2;
-  --accent-red-border: #ffd1a2;
-
-  /* XP bar */
-  --xp-track: #e9edf3;
-  --xp-fill-a: #ffcf5a;
-  --xp-fill-b: #ff9d3d;
-
-  /* Peach radial (default background) */
-  --peach-1: #ffe0c8;
-  --peach-2: #ffd1b6;
-  --peach-3: #ffc5a6;
+  --sheet-h: 44vh;
+  --accent: #e3582e;
+  --xp-track: #e9edf0;
+  --xp-fill-a: #ffd76b;
+  --xp-fill-b: #ffb44a;
 }
 
-/* ---------- Full page background ---------- */
-html, body { min-height: 100%; }
-body {
-  /* DEFAULT: peach radial */
-  background:
-    radial-gradient(120% 100% at 50% 20%, var(--peach-1) 0%, var(--peach-2) 48%, var(--peach-3) 100%);
-  background-color: var(--peach-3);
+/* Background gradient (requested) */
+.mobile-body{
+  min-height: 100svh;
+  margin: 0;
+  background: radial-gradient(circle, rgba(240,210,155,1) 0%, rgba(235,156,140,1) 100%);
   background-repeat: no-repeat;
-  background-position: center center;
+  background-position: center;
   background-size: cover;
+  color: var(--ink-900);
 }
 
-/* When scenic background is active (JS sets data-bg="scenic") */
-body[data-bg="scenic"]{
-  background-repeat: no-repeat;
-  background-position: center center;
-  background-size: cover; /* image is provided via body.style.backgroundImage in JS */
+/* Transparent user pill (no bg/border/shadow) */
+.m-header{ padding: calc(env(safe-area-inset-top,0) + 12px) 16px 6px; }
+.user-pill{
+  display:inline-flex; align-items:center; gap:8px;
+  background: transparent; border: 0; box-shadow: none;
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+  color:#2a2a2a; font-weight:800; letter-spacing:.01em;
+  padding: 0;
+}
+.user-pill .dot{
+  width:10px; height:10px; border-radius:50%;
+  background: linear-gradient(180deg,#d5dbff,#7f88e6);
+  border: 1px solid rgba(0,0,0,.05);
 }
 
-/* ---------- App chrome: transparent container so bg fills edge-to-edge ---------- */
-.wrapper { padding: clamp(8px, 2vw, 24px); }
-.container {
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-}
+/* Views */
+.view{ padding: 10px 16px 16px; }
+.view--home{ display:grid; place-items:center; min-height:60svh; }
 
-/* Header tweaks to match theme */
-.header {
-  background: linear-gradient(180deg, rgba(255,255,255,.04), transparent);
-  border: 1px solid var(--ui-border);
-  border-radius: 14px;
-}
-.header__title { color: var(--ui-text); }
-.header__meta { color: var(--ui-muted); }
+/* Home buttons */
+.home-buttons{ display:grid; gap:14px; width:min(460px, 92%); }
+.btn--home{ width:100%; font-size:1.1rem; padding:1rem 1.25rem; border-radius:999px; }
 
-/* Main spacing */
-.main { padding: 12px; }
-
-/* Base card keeps soft surface for home cards/lists */
-.card {
-  background: rgba(0,0,0,.18);
-  border: 1px solid var(--ui-border);
-  border-radius: 16px;
-}
-
-/* ---------- Home actions: themed buttons ---------- */
-.home-actions { display: grid; gap: 10px; }
-.btn {
-  background: var(--ui-surface);
-  color: var(--ui-text);
-  border: 1px solid var(--ui-border);
-  padding: 12px 16px;
-  border-radius: 12px;
-  font-weight: 700;
-  transition: transform .12s ease, background .2s ease, border-color .2s ease;
-}
-.btn:hover { transform: translateY(-1px); border-color: rgba(255,255,255,.16); }
-.btn:active { transform: translateY(0); }
-.btn--primary {
-  background: linear-gradient(90deg, #1b2634, #243347);
-  color: #fff;
-  border-color: rgba(255,255,255,.12);
-}
-.btn--ghost {
-  background: transparent;
-  color: var(--ui-muted);
-  border-style: dashed;
-}
-
-/* ---------- Hero (transparent; sprite sits over page bg) ---------- */
-.mobile-hero {
+/* Pet canvas (QR centered overlay) */
+.m-canvas{
   position: relative;
-  height: clamp(320px, 56vh, 600px);
-  overflow: hidden;
-  background: transparent;
+  display: grid; place-items: center;
+  padding: 8px 16px calc(var(--sheet-h) + 10px);
+}
+.pet-sprite{
+  width: min(78%, 360px);
+  height: auto; object-fit: contain;
+  filter: drop-shadow(0 6px 24px rgba(0,0,0,.12));
+  transform: translateY(6px);
 }
 
-/* Handle badge with status dot (color changes by bg mode) */
-.handle-badge {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  padding: 6px 10px 6px 22px; /* space for dot */
-  border-radius: 999px;
-  background: rgba(0,0,0,.50);
-  color: #e8eef6;
-  border: 1px solid rgba(255,255,255,.18);
-  font-size: 13px;
+/* Centered QR overlay (no click blocking for buttons below) */
+.qr-holder{
+  position:absolute; inset: 0;
+  display:grid; place-items:center;
+  pointer-events:none;
 }
-.handle-badge::before{
-  content: "";
-  position: absolute; left: 8px; top: 50%;
-  width: 8px; height: 8px; border-radius: 50%;
-  transform: translateY(-50%);
-  background: #b6bdc6; /* default gray dot on peach */
-}
-body[data-bg="scenic"] .handle-badge::before { background: #44d07d; } /* green dot on scenic */
+.qr-holder canvas{ width:auto; height:auto; max-width:70vw; max-height:60vh; }
 
-/* Centered sprite (will be replaced by QR image) */
-.sprite {
-  position: absolute;
-  left: 50%;
-  top: 52%;
-  transform: translate(-50%, -50%);
-  width: min(68vw, 360px);
-  height: auto;
+/* White bottom sheet */
+.pet-card{
+  position: fixed; left:0; right:0; bottom:0;
+  min-height: var(--sheet-h);
+  padding: 18px 18px calc(env(safe-area-inset-bottom,0) + 18px);
+  background: #fff; color:#1a1d22;
+  border-top-left-radius: 24px; border-top-right-radius: 24px;
+  box-shadow: 0 -10px 30px rgba(30,41,59,.10);
+  border-top: 1px solid rgba(0,0,0,.05);
 }
 
-/* ---------- Bottom sheet (white) ---------- */
-.sheet {
-  position: relative;
-  margin-top: -14px;
-  background: #ffffff;
-  color: #1a1d22;
-  border: 1px solid rgba(0,0,0,.06);
-  border-top-left-radius: 18px;
-  border-top-right-radius: 18px;
-  border-bottom-left-radius: 12px;
-  border-bottom-right-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0,0,0,.12);
+/* QR toggle on the sheet, upper-left */
+.qr-toggle{
+  position:absolute; top: 12px; right: 12px;
+  width:40px; height:40px; border-radius:50%;
+  border:1px solid rgba(0,0,0,.08); background:#fff;
+  box-shadow: var(--shadow-1);
+}
+.qr-toggle::before{
+  content:"QR"; display:block; font-weight:800; font-size:.85rem;
+  color:#333; line-height:40px; text-align:center;
 }
 
-/* Title / subtitle */
-.sheet__title {
-  font-size: 20px;
-  font-weight: 800;
-  color: var(--accent-red);
+/* Sheet content */
+.pet-name{
+  margin: 8px 0 4px; font-weight:800;
+  color: var(--accent);
+  font-size: clamp(20px, 4.2vw, 24px);
+  line-height: 1.1;
 }
-.sheet__subtitle {
-  margin-top: 4px;
-  color: #7b8696;
-  font-weight: 600;
+.pet-title{ margin:0; color:#6b6b6b; font-size:.95rem; }
+
+.level-row{ margin-top:12px; display:flex; align-items:center; }
+.lvl-badge{
+  display:inline-flex; align-items:center; height:28px; padding:0 10px;
+  border-radius:999px; font-weight:700; font-size:.85rem; color:#fff;
+  background: var(--accent); box-shadow: 0 6px 20px rgba(227,88,46,.25);
 }
 
-/* Level chip */
-.sheet__row { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; }
-.chip {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 6px 10px;
-  background: var(--accent-red-soft);
-  color: var(--accent-red-ink);
-  border: 1px solid var(--accent-red-border);
-  border-radius: 999px;
-  font-weight: 700;
-}
-
-/* ---------- XP bar with label inside (right) ---------- */
-.xp { margin-top: 10px; }
-.xp__bar {
-  position: relative;
-  height: 10px;
+/* XP: bar then points row below, right-aligned */
+.xp-wrap{ margin-top:12px; display:grid; gap:8px; }
+.xp-bar{
+  position:relative; height:12px; border-radius:999px; overflow:hidden;
   background: var(--xp-track);
-  border-radius: 999px;
-  overflow: hidden;
   border: 1px solid rgba(0,0,0,.06);
 }
-.xp__bar > i {
-  position: absolute; inset: 0 auto 0 0;
-  width: 0%;
+.xp-fill{
+  position:absolute; inset:0 auto 0 0;
   background: linear-gradient(90deg, var(--xp-fill-a), var(--xp-fill-b));
+  width:0%;
 }
-.xp__label {
-  position: absolute;
-  right: 8px; top: 50%;
-  transform: translateY(-50%);
-  font-size: 11px;
-  color: #8a94a5;
-  pointer-events: none;
+.xp-row{
+  display:grid; grid-template-columns: 1fr auto;
+}
+.xp-text{
+  font-size:.85rem; font-weight:800; color:#6b6b6b;
 }
 
-/* Quip */
-.sheet__quip { margin-top: 10px; color: #657084; font-size: 13px; }
-
-/* Sheet controls */
-.sheet__controls { margin-top: 12px; }
-
-/* Lists (pet/backgrounds) */
-.list { display: grid; gap: 10px; }
-.list__item {
-  display: flex; align-items: center; gap: 12px;
-  padding: 10px; border-radius: 12px;
-  background: rgba(0,0,0,.20);
-  border: 1px solid var(--ui-border);
+/* HR above quip */
+.quip-hr{
+  margin: 14px 0 10px;
+  border: 0; height: 1px;
+  background: linear-gradient(90deg, rgba(0,0,0,.04), rgba(0,0,0,.08), rgba(0,0,0,.04));
 }
-.list__thumb { width: 56px; height: 56px; border-radius: 8px; object-fit: cover; }
 
-/* Small screens */
-@media (max-width: 380px){
-  .container { border-radius: 10px; }
+/* Quip + actions */
+.pet-desc{ margin: 0 2px 0; color:#4b4b4b; font-style:italic; font-size:.95rem; }
+.sheet-actions{ margin-top:16px; display:flex; justify-content:flex-end; }
+
+/* List & Backgrounds */
+.panel{
+  background: rgba(255,255,255,.75);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  border:1px solid rgba(0,0,0,.06);
+  border-radius: 16px; padding: 14px; box-shadow: var(--shadow-1);
 }
+.panel-title{ margin:4px 2px 12px; font-size:1.1rem; font-weight:800; }
+.pets-grid{ display:grid; gap:12px; grid-template-columns: repeat(3, 1fr); }
+.pet-card-mini{
+  background:#fff; border:1px solid rgba(0,0,0,.06);
+  border-radius:12px; overflow:hidden; padding:8px;
+  display:grid; place-items:center;
+}
+.pet-card-mini img{ width:100%; height:auto; object-fit:contain; }
+.bg-grid{ display:grid; gap:12px; grid-template-columns: 1fr 1fr; }
+.bg-card{ display:grid; gap:6px; justify-items:center; background:#fff; border:1px solid rgba(0,0,0,.06); border-radius:12px; padding:10px; }
+.bg-card img{ width:100%; height:auto; border-radius:8px; }
+.bg-card span{ font-size:.9rem; font-weight:700; color:#2a2a2a; }
+.panel-actions{ margin-top:12px; display:flex; justify-content:flex-end; }
+
+/* Helpers */
+.hidden{ display:none !important; }

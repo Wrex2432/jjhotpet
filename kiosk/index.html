@@ -1,83 +1,79 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <title>HotPet — Kiosk</title>
 
-  <!-- Shared base styles -->
-  <link rel="stylesheet" href="../assets/style.css"/>
-  <!-- Kiosk-specific styles -->
+  <!-- Kiosk-only overrides (camera view, background image, utilities) -->
   <link rel="stylesheet" href="./kiosk.css"/>
   <link rel="icon" href="../assets/favicon.ico"/>
 </head>
 <body>
-  <div class="wrapper">
-    <div class="container container--kiosk" id="app">
-      <header class="header">
-        <h1 class="header__title">HotPet — Kiosk</h1>
-        <div class="header__meta small muted">
-          <span id="kioskStatus" class="kiosk__status">Scanner ready</span>
+
+  <!-- Invisible simulate button (also press Q) -->
+  <button id="btnSimulate" class="sim-btn" aria-label="Simulate scan"></button>
+
+  <main class="kiosk-root">
+    <!-- CAMERA VIEW (default) -->
+    <section id="view-camera" class="view is-active" aria-label="Camera view">
+      <div class="cam-shell">
+        <div class="stage">
+          <video id="video" autoplay playsinline></video>
+          <canvas id="canvas" class="hidden"></canvas>
         </div>
-      </header>
+        <div class="hint">Point a QR code at the camera</div>
+      </div>
+    </section>
 
-      <main class="main">
-        <!-- CAMERA VIEW (default) -->
-        <section class="view is-active" id="view-camera">
-          <div class="row">
-            <div class="stage card">
-              <video id="video" autoplay playsinline></video>
-              <canvas id="canvas" class="hidden"></canvas>
-              <div class="stage__overlay">
-                <span class="badge">Point a QR code to the camera</span>
-              </div>
-            </div>
-            <div class="controls">
-              <button class="btn" id="btnToggleCam">Toggle camera</button>
-              <button class="btn btn--ghost" id="btnSimulate">Simulate scan</button>
-            </div>
-          </div>
-        </section>
+    <!-- LOADING OVERLAY -->
+    <section id="view-loading" class="view hidden" aria-label="Loading">
+      <div class="loading">
+        <div class="spinner" aria-hidden="true"></div>
+        <p class="loading__text">Loading…</p>
+      </div>
+    </section>
 
-        <!-- CHARACTER VIEW (after successful scan) -->
-        <section class="view" id="view-character">
-          <!-- Hero (transparent; background is set on <body>) -->
-          <div class="k-hero card">
-            <div class="handle-badge" id="handleBadge">@someone</div>
-            <img id="petImage" class="sprite" alt="Pet"/>
-          </div>
-
-          <!-- Bottom sheet (mirrors mobile) -->
-          <div class="sheet card">
-            <h2 class="sheet__title" id="petName">PetName</h2>
-            <p class="sheet__subtitle" id="petType">Pet Type</p>
-
-            <div class="sheet__row">
-              <span class="chip" id="levelChip">Lv. 0</span>
-            </div>
-
-            <div class="xp">
-              <div class="xp__bar" aria-label="Progress toward next level">
-                <i id="xpFill" style="width:0%"></i>
-                <span class="xp__label" id="xpLabel">0 / 0</span>
-              </div>
-            </div>
-
-            <p class="sheet__quip" id="petQuip"></p>
-
-            <div class="controls sheet__controls">
-              <button class="btn btn--primary" id="btnReset">Reset (show camera)</button>
-              <button class="btn" id="btnExtend">Extend view +10s</button>
-              <span class="small muted">Auto-reset in <strong id="countdown">—</strong>s</span>
-            </div>
-          </div>
-        </section>
-      </main>
+    <!-- PET VIEW (copied from mobile; removed QR + Back) -->
+    <!-- PET VIEW -->
+<section id="view-pet" class="view view--pet hidden" aria-label="Current pet">
+  <!-- NEW: username pill -->
+  <header class="m-header">
+    <div class="user-pill">
+      <span class="dot" aria-hidden="true"></span>
+      <span id="username">@someone</span>
     </div>
-  </div>
+  </header>
 
-  <!-- Shared helpers -->
-  <script src="../assets/main.js"></script>
+  <main class="m-canvas">
+    <img id="petSprite" class="pet-sprite" alt="Pet"/>
+  </main>
+
+  <aside class="pet-card" role="region" aria-label="Pet details">
+    <div class="pet-meta">
+      <h1 id="petName" class="pet-name">PetName</h1>
+      <p id="petType" class="pet-title">Pet Type</p>
+    </div>
+
+    <div class="level-row">
+      <span class="lvl-badge">Lv. <span id="levelNum">0</span></span>
+    </div>
+
+    <div class="xp-wrap" aria-label="Experience">
+      <div class="xp-bar"><div id="xpFill" class="xp-fill" style="width:0%"></div></div>
+      <div class="xp-row">
+        <span class="xp-spacer"></span>
+        <span class="xp-text"><span id="xpNow">0</span>/<span id="xpMax">1000</span>pts</span>
+      </div>
+    </div>
+
+    <hr class="quip-hr"/>
+    <p id="petDesc" class="pet-desc"></p>
+  </aside>
+</section>
+
+  </main>
+
   <!-- QR decode lib -->
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
   <!-- Kiosk logic -->
