@@ -11,7 +11,7 @@
   // =========================
   const PETS_URL       = './pets.json'; // <= kiosk-local copy
   const LOADING_SEC    = 0.1;           // spinner duration before showing pet
-  const PET_VIEW_SEC   = 5;            // auto-return to camera after N seconds
+  const PET_VIEW_SEC   = 20;            // auto-return to camera after N seconds
 
   // =========================
   // DOM
