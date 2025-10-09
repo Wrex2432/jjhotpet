@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>HotPets | QR Demo</title>
+  <style>
+    :root{ --bg: url("../../assets/backgrounds/BG_1080x1920.png"); }
+    html,body{ height:100%; margin:0; }
+    body{
+      background: center / cover no-repeat var(--bg);
+      display:grid; place-items:center;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans";
+    }
+    .card{
+      background: rgba(255,255,255,.92);
+      backdrop-filter: blur(3px);
+      border: 1px solid rgba(0,0,0,.08);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.18);
+      display:grid; gap:10px; place-items:center;
+      width:min(92vw,360px);
+    }
+    #qrcode canvas, #qrcode img{ width:280px; height:280px; }
+    .label{ color:#6b7280; font-size:.9rem; }
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+    .links{ display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
+    .btn{ padding:6px 10px; border-radius:10px; border:1px solid #e5e7eb; background:#fff; text-decoration:none; color:#111827; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div id="qrcode" aria-label="QR code"></div>
+    <div class="label">Scan to open demo pet</div>
+    <div id="payload" class="label mono"></div>
+    <div class="links">
+      <a class="btn" href="../index.html">All QR Demos</a>
+      <a class="btn" href="../../kiosk/index.html">Kiosk</a>
+      <a class="btn" href="../../mobile/index.html">Mobile</a>
+    </div>
+  </main>
+
+  <!-- Same QR lib include as mobile -->
+  <script src="https://unpkg.com/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <script>
+    (async function(){
+      // demoN → i = N-1  (demo1→0, demo2→1, demo3→2, …)
+      const m = location.pathname.match(/\/QR\/demo(\d+)\/?/i);
+      const n = m ? parseInt(m[1], 10) : 1;
+      const i = Math.max(0, (isFinite(n) ? n - 1 : 0));
+
+      // Load pets to pull short hints (u, n)
+      let pets = [];
+      try {
+        const res = await fetch("../../assets/pets.json", { cache: "no-store" });
+        pets = await res.json();
+      } catch (e) {
+        pets = [];
+      }
+      const pet = pets[i] || {};
+      const u = (pet.UserName || "").slice(0, 20);
+      const nName = (pet.PetName || "").slice(0, 24);
+
+      // Payload matches your mobile QR format with hints
+      const payloadObj = { i };
+      if (u) payloadObj.u = u;
+      if (nName) payloadObj.n = nName;
+      const payload = JSON.stringify(payloadObj);
+
+      // Render QR
+      const host = document.getElementById('qrcode');
+      new QRCode(host, { text: payload, width: 280, height: 280, correctLevel: QRCode.CorrectLevel.L });
+
+      // Small debug line so you can confirm output
+      document.getElementById('payload').textContent = payload;
+    })();
+  </script>
+</body>
+</html>

@@ -10,8 +10,8 @@
   // Config
   // =========================
   const PETS_URL       = './pets.json'; // <= kiosk-local copy
-  const LOADING_SEC    = 1.0;           // spinner duration before showing pet
-  const PET_VIEW_SEC   = 15;            // auto-return to camera after N seconds
+  const LOADING_SEC    = 0.1;           // spinner duration before showing pet
+  const PET_VIEW_SEC   = 5;            // auto-return to camera after N seconds
 
   // =========================
   // DOM
@@ -247,35 +247,40 @@ async function resolvePayload(text){
   // =========================
   // Render
   // =========================
-  function renderPet(p){
-    try {
-      // sprite
+function renderPet(p){
+  try {
+    // sprite
+    if (petSprite) {
       petSprite.src = p.PetSpriteSrc || '';
       petSprite.alt = p.PetName || 'Pet';
+    }
 
-      // username pill
-      if (usernameEl) usernameEl.textContent = p.UserName ? `@${p.UserName}` : '@player';
-      console.log(p)
-      // text fields
-      petName.textContent  = p.PetName || '';
-      petType.textContent  = p.PetType || '';
-      levelNum.textContent = String(p.DiscountLevel ?? 0);
+    // username pill
+    if (usernameEl) usernameEl.textContent = p.UserName ? `@${p.UserName}` : '@player';
 
-      // XP
+    // text fields (optional blocks)
+    if (petName)  petName.textContent = p.PetName || '';
+    if (petType)  petType.textContent = p.PetType || '';
+    if (levelNum) levelNum.textContent = String(p.DiscountLevel ?? 0);
+
+    // XP (only if the bar exists in DOM)
+    if (xpFill || xpNow || xpMax) {
       const max = Math.max(1, toInt(p.MaxPointsNeedForNextLevel, 1000));
       const now = Math.max(0, toInt(p.PointsTotal, 0));
       const pct = Math.min(100, (now / max) * 100);
 
-      xpFill.style.width = pct.toFixed(1) + '%';
-      xpNow.textContent  = String(now);
-      xpMax.textContent  = String(max);
-
-      // quip
-      petDesc.textContent = p.Quips || '';
-    } catch (e) {
-      console.error('[kiosk] render error', e);
+      if (xpFill) xpFill.style.width = pct.toFixed(1) + '%';
+      if (xpNow)  xpNow.textContent  = String(now);
+      if (xpMax)  xpMax.textContent  = String(max);
     }
+
+    // quip
+    if (petDesc) petDesc.textContent = p.Quips || '';
+  } catch (e) {
+    console.error('[kiosk] render error', e);
   }
+}
+
 
   // =========================
   // Scan handling

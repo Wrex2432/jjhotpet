@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>HotPets | QR Demos</title>
+
+  <link rel="stylesheet" href="../assets/style.css" />
+
+  <style>
+    :root {
+      --qr-bg: url("../assets/backgrounds/BG_1080x1920.png");
+      --backdrop: rgba(255,255,255,0.85);
+      --wrap-max: 960px;
+      --gap: 16px;
+      --radius: 16px;
+    }
+    html, body { height: 100%; }
+    body {
+      margin: 0; min-height: 100%;
+      background-image: var(--qr-bg);
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-position: center center;
+      display: grid; place-items: center;
+    }
+    .wrap {
+      width: min(100% - 32px, var(--wrap-max));
+      padding: 24px; border-radius: var(--radius);
+      background: var(--backdrop);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+      backdrop-filter: blur(3px);
+    }
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: var(--gap); margin-bottom: 16px;
+    }
+    .topbar h1 { font-size: 1.25rem; margin: 0; }
+    .grid {
+      display: grid; gap: var(--gap);
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    @media (min-width: 720px) {
+      .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    .card {
+      border-radius: var(--radius); padding: 16px;
+      background: #fff; border: 1px solid rgba(0,0,0,0.06);
+      display: grid; gap: 8px;
+    }
+    .card h2 { margin: 0; font-size: 1rem; line-height: 1.25; }
+    .card a.btn { justify-self: start; margin-top: 4px; }
+    .footer {
+      margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end;
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap" role="main">
+    <div class="topbar">
+      <h1>QR Demos</h1>
+      <a class="btn" href="../index.html">Back to Home</a>
+    </div>
+
+    <section class="grid" id="demoGrid" aria-label="QR Demo Folders"></section>
+
+    <div class="footer">
+      <a class="btn btn--primary" href="../kiosk/index.html">Open Kiosk</a>
+      <a class="btn" href="../mobile/index.html">Open Mobile</a>
+    </div>
+  </main>
+
+  <script>
+    const demoFolders = ["demo1","demo2","demo3","demo4","demo5"];
+    const grid = document.getElementById('demoGrid');
+    grid.innerHTML = demoFolders.map((id, i) => `
+      <article class="card">
+        <h2>Demo ${i+1}</h2>
+        <a class="btn btn--primary" href="./${id}/">Open</a>
+      </article>
+    `).join('');
+  </script>
+</body>
+</html>
