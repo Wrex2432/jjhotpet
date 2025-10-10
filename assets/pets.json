@@ -4,20 +4,20 @@
     "PetName": "Chub Shrimp",
     "PetType": "Chief Beef",
     "PetSpriteSrc": "../assets/character/Chub1.png",
-    "DiscountLevel": 3,
-    "PointsTotal": 1200,
-    "MaxPointsNeedForNextLevel": 2000,
-    "Quips": "Smokin’ sizzle unlocked! More dips, more drip."
+    "DiscountLevel": 1,
+    "PointsTotal": 340,
+    "MaxPointsNeedForNextLevel": 1000,
+    "Quips": "Not much flavor yet… flames on to spice it up!"
   },
   {
     "UserName": "Liter",
     "PetName": "Fit Shrimp",
     "PetType": "Chief Beef",
     "PetSpriteSrc": "../assets/character/Chub2.png",
-    "DiscountLevel": 1,
-    "PointsTotal": 340,
-    "MaxPointsNeedForNextLevel": 1000,
-    "Quips": "Not much flavor yet… flames on to spice it up!"
+    "DiscountLevel": 3,
+    "PointsTotal": 1200,
+    "MaxPointsNeedForNextLevel": 2000,
+    "Quips": "Smokin’ sizzle unlocked! More dips, more drip."
   },
   {
     "UserName": "Mik",
